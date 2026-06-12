@@ -1,0 +1,346 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}WorkSphere HR{% endblock %} | {{ COMPANY_NAME }}</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563EB',
+                        secondary: '#64748B',
+                        success: '#10B981',
+                        warning: '#F59E0B',
+                        danger: '#EF4444',
+                        info: '#06B6D4',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Icons & Charts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- WorkSphere Custom CSS -->
+    <link rel="stylesheet" href="{% static 'css/worksphere.css' %}">
+
+    <!-- Utilities JS -->
+    <script src="{% static 'js/utilities.js' %}" defer></script>
+
+    <!-- Inline overrides -->
+    <style>
+        body { background: #F8FAFC; font-family: 'Inter', 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .sidebar-active { background: #EFF6FF; border-left: 4px solid #2563EB; color: #2563EB; }
+        .card-hover { transition: box-shadow .2s, transform .2s; cursor: pointer; }
+        .card-hover:hover { box-shadow: 0 8px 24px rgba(0,0,0,.10); transform: translateY(-2px); }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(8px);} to {opacity:1; transform:none;} }
+        .animate-fade-in { animation: fadeIn .3s ease-out; }
+        #toastContainer { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+        .spinner { border: 3px solid rgba(255,255,255,.3); border-top: 3px solid white; border-radius: 50%; width: 20px; height: 20px; animation: spin .7s linear infinite; display: inline-block; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        /* ensure sidebar is visible on desktop */
+        @media (min-width: 768px) { #sidebar { transform: none !important; position: relative !important; } }
+    </style>
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    {% if user.is_authenticated %}
+
+    <!-- App Shell -->
+    <div style="display:flex; height:100vh; overflow:hidden; background:#F1F5F9;">
+
+        <!-- ═══ SIDEBAR ═══ -->
+        <aside id="sidebar" style="width:260px; background:#fff; border-right:1px solid #E2E8F0; display:flex; flex-direction:column; flex-shrink:0; overflow-y:auto; position:fixed; top:0; left:0; height:100vh; z-index:40; transition:transform .3s; transform:translateX(-100%);">
+
+            <!-- Logo -->
+            <div style="padding:20px 20px 16px; border-bottom:1px solid #E2E8F0; display:flex; align-items:center; gap:12px;">
+                <div style="width:40px; height:40px; background:linear-gradient(135deg,#2563EB,#7C3AED); border-radius:10px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:18px; flex-shrink:0;">
+                    <i class="fas fa-hexagon-nodes"></i>
+                </div>
+                <div>
+                    <div style="font-size:16px; font-weight:800; color:#0F172A; line-height:1.2;">WorkSphere</div>
+                    <div style="font-size:11px; color:#94A3B8; letter-spacing:.5px;">HR PLATFORM</div>
+                </div>
+            </div>
+
+            <!-- User Card -->
+            <div style="padding:14px 16px; border-bottom:1px solid #F1F5F9; background:#F8FAFC;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <div style="width:38px; height:38px; background:linear-gradient(135deg,#3B82F6,#1D4ED8); border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:15px; flex-shrink:0;">
+                        {{ user.email|first|upper }}
+                    </div>
+                    <div style="min-width:0;">
+                        <div style="font-size:13px; font-weight:600; color:#1E293B; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                            {% if user.first_name %}{{ user.first_name }} {{ user.last_name }}{% else %}{{ user.email|truncatechars:22 }}{% endif %}
+                        </div>
+                        <div style="font-size:11px; color:#64748B;">{{ user.get_role_display }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation -->
+            <nav style="flex:1; padding:12px 10px; overflow-y:auto;">
+
+                <!-- Dashboard -->
+                <a href="/" class="nav-item" style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; text-decoration:none; color:#374151; font-size:13.5px; font-weight:500; margin-bottom:2px;">
+                    <i class="fas fa-gauge-high" style="width:18px; text-align:center; color:#6B7280;"></i>
+                    <span>Dashboard</span>
+                </a>
+
+                <!-- Attendance -->
+                <div style="padding:12px 12px 4px; font-size:10px; font-weight:700; color:#94A3B8; text-transform:uppercase; letter-spacing:1px;">Attendance</div>
+                <a href="/attendance/" class="nav-item" style="display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:8px; text-decoration:none; color:#374151; font-size:13px; margin-bottom:2px;">
+                    <i class="fas fa-clock" style="width:18px; text-align:center; color:#6B7280;"></i>
+                    <span>My Attendance</span>
+                </a>
+                <a href="/attendance/clock/" class="nav-item" style="display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:8px; text-decoration:none; color:#374151; font-size:13px; margin-bottom:2px;">
+                    <i class="fas fa-fingerprint" style="width:18px; text-align:center; color:#6B7280;"></i>
+                    <span>Clock In/Out</span>
+                </a>
+                {% if user.role == 'manager' or user.role == 'hr_admin' or user.role == 'super_admin' %}
+                <a href="/attendance/team/" class="nav-item" style="display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:8px; text-decoration:none; color:#374151; font-size:13px; margin-bottom:2px;">
+                    <i class="fas fa-users-line" style="width:18px; text-align:center; color:#6B7280;"></i>
+                    <span>Team Attendance</span>
+                </a>
+                {% endif %}
+
+                <!-- Leave -->
+                <div style="padding:12px 12px 4px; font-size:10px; font-weight:700; color:#94A3B8; text-transform:uppercase; letter-spacing:1px;">Leave</div>
+                <a href="/leave/" class="nav-item" style="display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:8px; text-decoration:none; color:#374151; font-size:13px; margin-bottom:2px;">
+                    <i class="fas fa-calendar-days" style="width:18px; text-align:center; color:#6B7280;"></i>
+                    <span>My Leave</span>
+                </a>
+                <a href="/leave/apply/" class="nav-item" style="display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:8px; text-decoration:none; color:#374151; font-size:13px; margin-bottom:2px;">
+                    <i class="fas fa-plus-circle" style="width:18px; text-align:center; color:#6B7280;"></i>
+                    <span>Apply Leave</span>
+                </a>
+                <a href="/leave/balance/" class="nav-item" style="display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:8px; text-decoration:none; color:#374151; font-size:13px; margin-bottom:2px;">
+                    <i class="fas fa-chart-pie" style="width:18px; text-align:center; color:#6B7280;"></i>
+                    <span>Leave Balance</span>
+                </a>
+                {% if user.role == 'manager' or user.role == 'hr_admin' or user.role == 'super_admin' %}
+                <a href="/leave/requests/" class="nav-item" style="display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:8px; text-decoration:none; color:#374151; font-size:13px; margin-bottom:2px;">
+                    <i class="fas fa-check-double" style="width:18px; text-align:center; color:#6B7280;"></i>
+                    <span>Leave Requests</span>
+                </a>
+                {% endif %}
+                <a href="/leave/holidays/" class="nav-item" style="display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:8px; text-decoration:none; color:#374151; font-size:13px; margin-bottom:2px;">
+                    <i class="fas fa-umbrella-beach" style="width:18px; text-align:center; color:#6B7280;"></i>
+                    <span>Holidays</span>
+                </a>
+
+                <!-- Payroll -->
+                <div style="padding:12px 12px 4px; font-size:10px; font-weight:700; color:#94A3B8; text-transform:uppercase; letter-spacing:1px;">Payroll</div>
+                <a href="/payroll/my-payslips/" class="nav-item" style="display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:8px; text-decoration:none; color:#374151; font-size:13px; margin-bottom:2px;">
+                    <i class="fas fa-file-invoice-dollar" style="width:18px; text-align:center; color:#6B7280;"></i>
+                    <span>My Payslips</span>
+                </a>
+                {% if user.role == 'hr_admin' or user.role == 'payroll_admin' or user.role == 'super_admin' %}
+                <a href="/payroll/" class="nav-item" style="display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:8px; text-decoration:none; color:#374151; font-size:13px; margin-bottom:2px;">
+                    <i class="fas fa-money-bill-wave" style="width:18px; text-align:center; color:#6B7280;"></i>
+                    <span>Payroll Admin</span>
+                </a>
+                {% endif %}
+
+                <!-- Employees (HR/Admin only) -->
+                {% if user.role == 'hr_admin' or user.role == 'super_admin' %}
+                <div style="padding:12px 12px 4px; font-size:10px; font-weight:700; color:#94A3B8; text-transform:uppercase; letter-spacing:1px;">People</div>
+                <a href="/employees/" class="nav-item" style="display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:8px; text-decoration:none; color:#374151; font-size:13px; margin-bottom:2px;">
+                    <i class="fas fa-users" style="width:18px; text-align:center; color:#6B7280;"></i>
+                    <span>Employee Directory</span>
+                </a>
+                {% endif %}
+
+                <!-- Reports (HR/Admin only) -->
+                {% if user.role == 'hr_admin' or user.role == 'super_admin' or user.role == 'auditor' %}
+                <div style="padding:12px 12px 4px; font-size:10px; font-weight:700; color:#94A3B8; text-transform:uppercase; letter-spacing:1px;">Reports</div>
+                <a href="/reports/" class="nav-item" style="display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:8px; text-decoration:none; color:#374151; font-size:13px; margin-bottom:2px;">
+                    <i class="fas fa-chart-bar" style="width:18px; text-align:center; color:#6B7280;"></i>
+                    <span>Analytics</span>
+                </a>
+                <a href="/reports/attendance/" class="nav-item" style="display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:8px; text-decoration:none; color:#374151; font-size:13px; margin-bottom:2px;">
+                    <i class="fas fa-file-chart-column" style="width:18px; text-align:center; color:#6B7280;"></i>
+                    <span>Attendance Report</span>
+                </a>
+                {% endif %}
+
+                <!-- Admin -->
+                {% if user.is_staff %}
+                <div style="padding:12px 12px 4px; font-size:10px; font-weight:700; color:#94A3B8; text-transform:uppercase; letter-spacing:1px;">Admin</div>
+                <a href="/admin/" class="nav-item" style="display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:8px; text-decoration:none; color:#374151; font-size:13px; margin-bottom:2px;" target="_blank">
+                    <i class="fas fa-screwdriver-wrench" style="width:18px; text-align:center; color:#6B7280;"></i>
+                    <span>Django Admin</span>
+                </a>
+                {% endif %}
+
+            </nav>
+
+            <!-- Logout -->
+            <div style="padding:12px; border-top:1px solid #F1F5F9;">
+                <a href="/auth/logout/" style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; text-decoration:none; color:#EF4444; font-size:13px; font-weight:500; background:#FEF2F2;">
+                    <i class="fas fa-right-from-bracket" style="width:18px; text-align:center;"></i>
+                    <span>Sign Out</span>
+                </a>
+            </div>
+        </aside>
+
+        <!-- ═══ MAIN AREA ═══ -->
+        <div style="flex:1; display:flex; flex-direction:column; overflow:hidden; margin-left:0;" id="mainArea">
+
+            <!-- Top Header -->
+            <header style="background:#fff; border-bottom:1px solid #E2E8F0; padding:0 24px; height:64px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; position:sticky; top:0; z-index:30;">
+                <div style="display:flex; align-items:center; gap:16px;">
+                    <!-- Hamburger -->
+                    <button id="sidebarToggle" onclick="toggleSidebar()" style="background:none; border:none; cursor:pointer; padding:8px; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#64748B;">
+                        <i class="fas fa-bars" style="font-size:18px;"></i>
+                    </button>
+                    <div>
+                        <h1 style="font-size:18px; font-weight:700; color:#0F172A; margin:0; line-height:1.2;">{% block page_title %}Dashboard{% endblock %}</h1>
+                        <div style="font-size:12px; color:#94A3B8; margin-top:1px;">{% block page_subtitle %}{% endblock %}</div>
+                    </div>
+                </div>
+
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <!-- Notifications bell -->
+                    <button onclick="showToast('No new notifications', 'info')" style="background:none; border:none; cursor:pointer; padding:8px; border-radius:8px; position:relative; color:#64748B;">
+                        <i class="fas fa-bell" style="font-size:18px;"></i>
+                        <span style="position:absolute; top:6px; right:6px; width:8px; height:8px; background:#EF4444; border-radius:50%; border:2px solid #fff;"></span>
+                    </button>
+                    <!-- Avatar -->
+                    <div style="display:flex; align-items:center; gap:8px; padding-left:12px; border-left:1px solid #E2E8F0;">
+                        <div style="width:36px; height:36px; background:linear-gradient(135deg,#3B82F6,#1D4ED8); border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:14px;">
+                            {{ user.email|first|upper }}
+                        </div>
+                        <div style="display:none;" class="md-show">
+                            <div style="font-size:13px; font-weight:600; color:#1E293B;">{% if user.first_name %}{{ user.first_name }}{% else %}{{ user.email|truncatechars:15 }}{% endif %}</div>
+                            <div style="font-size:11px; color:#94A3B8;">{{ user.get_role_display }}</div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Breadcrumb -->
+            {% block breadcrumb %}{% endblock %}
+
+            <!-- Toast Container -->
+            <div id="toastContainer"></div>
+
+            <!-- Messages -->
+            {% if messages %}
+            <div style="padding:12px 24px 0;">
+                {% for message in messages %}
+                <div style="padding:12px 16px; border-radius:10px; margin-bottom:8px; font-size:13px; font-weight:500; display:flex; align-items:center; gap:10px;
+                    {% if message.tags == 'success' %}background:#D1FAE5; color:#065F46; border:1px solid #A7F3D0;
+                    {% elif message.tags == 'error' %}background:#FEE2E2; color:#991B1B; border:1px solid #FCA5A5;
+                    {% elif message.tags == 'warning' %}background:#FEF3C7; color:#92400E; border:1px solid #FDE68A;
+                    {% else %}background:#DBEAFE; color:#1E40AF; border:1px solid #BFDBFE;{% endif %}">
+                    <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %}"></i>
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Content -->
+            <main style="flex:1; overflow-y:auto; padding:24px;">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+
+    <!-- Overlay for mobile sidebar -->
+    <div id="sidebarOverlay" onclick="closeSidebar()" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:35;"></div>
+
+    <!-- JS -->
+    <script>
+    // Sidebar
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    const mainArea = document.getElementById('mainArea');
+    let sidebarOpen = window.innerWidth >= 768;
+
+    function applySidebar() {
+        if (sidebarOpen) {
+            sidebar.style.transform = 'translateX(0)';
+            overlay.style.display = 'none';
+            if (window.innerWidth >= 768) {
+                mainArea.style.marginLeft = '260px';
+            }
+        } else {
+            sidebar.style.transform = 'translateX(-100%)';
+            overlay.style.display = 'none';
+            mainArea.style.marginLeft = '0';
+        }
+    }
+
+    function toggleSidebar() {
+        sidebarOpen = !sidebarOpen;
+        if (sidebarOpen && window.innerWidth < 768) overlay.style.display = 'block';
+        applySidebar();
+    }
+    function closeSidebar() { sidebarOpen = false; applySidebar(); }
+
+    window.addEventListener('resize', () => {
+        sidebarOpen = window.innerWidth >= 768;
+        applySidebar();
+    });
+    applySidebar();
+
+    // Active nav highlight
+    document.querySelectorAll('.nav-item').forEach(item => {
+        const href = item.getAttribute('href');
+        if (href && window.location.pathname === href) {
+            item.style.background = '#EFF6FF';
+            item.style.color = '#2563EB';
+            item.style.borderLeft = '3px solid #2563EB';
+            item.querySelectorAll('i').forEach(i => i.style.color = '#2563EB');
+        }
+        item.addEventListener('mouseenter', () => {
+            if (window.location.pathname !== href) {
+                item.style.background = '#F8FAFC';
+                item.style.color = '#1E293B';
+            }
+        });
+        item.addEventListener('mouseleave', () => {
+            if (window.location.pathname !== href) {
+                item.style.background = '';
+                item.style.color = '#374151';
+            }
+        });
+    });
+
+    // Toast system
+    function showToast(msg, type='info') {
+        const container = document.getElementById('toastContainer');
+        const colors = {
+            success: {bg:'#D1FAE5', border:'#6EE7B7', color:'#065F46', icon:'fa-check-circle'},
+            error:   {bg:'#FEE2E2', border:'#FCA5A5', color:'#991B1B', icon:'fa-exclamation-circle'},
+            warning: {bg:'#FEF3C7', border:'#FDE68A', color:'#92400E', icon:'fa-exclamation-triangle'},
+            info:    {bg:'#DBEAFE', border:'#93C5FD', color:'#1E40AF', icon:'fa-info-circle'},
+        };
+        const c = colors[type] || colors.info;
+        const toast = document.createElement('div');
+        toast.style.cssText = `padding:12px 16px;background:${c.bg};border:1px solid ${c.border};color:${c.color};border-radius:10px;font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px;box-shadow:0 4px 12px rgba(0,0,0,.1);min-width:240px;max-width:360px;`;
+        toast.innerHTML = `<i class="fas ${c.icon}"></i><span>${msg}</span>`;
+        container.appendChild(toast);
+        setTimeout(() => { toast.style.opacity='0'; toast.style.transition='opacity .4s'; setTimeout(()=>toast.remove(), 400); }, 3500);
+    }
+    window.showToast = showToast;
+    </script>
+
+    {% block extra_js %}{% endblock %}
+
+    {% else %}
+    <script>window.location.href = '/auth/login/?next=' + encodeURIComponent(window.location.pathname);</script>
+    {% endif %}
+</body>
+</html>

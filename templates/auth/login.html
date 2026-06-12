@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign In | WorkSphere HR</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:#F8FAFC;display:grid;grid-template-columns:1fr 1fr;min-height:100vh}
+/* Left panel */
+.left{background:linear-gradient(135deg,#0F172A 0%,#1E40AF 60%,#0F172A 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px;position:relative;overflow:hidden}
+.left::before{content:'';position:absolute;top:-100px;right:-100px;width:400px;height:400px;background:radial-gradient(circle,rgba(37,99,235,.25) 0%,transparent 70%);pointer-events:none}
+.logo{display:flex;align-items:center;gap:12px;margin-bottom:48px;position:relative}
+.logo-icon{width:48px;height:48px;background:linear-gradient(135deg,#2563EB,#7C3AED);border-radius:14px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px}
+.logo-name{font-size:22px;font-weight:800;color:#fff;letter-spacing:-.5px}
+.logo-tag{font-size:11px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:1px}
+.hero-title{font-size:36px;font-weight:800;color:#fff;line-height:1.2;margin-bottom:16px;letter-spacing:-1px;text-align:center;position:relative}
+.hero-sub{font-size:15px;color:rgba(255,255,255,.55);line-height:1.7;margin-bottom:40px;text-align:center;max-width:380px;position:relative}
+.features{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;position:relative}
+.feature-pill{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.7);padding:6px 14px;border-radius:20px;font-size:12px;font-weight:500}
+.stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:48px;padding-top:32px;border-top:1px solid rgba(255,255,255,.08);width:100%;max-width:380px;position:relative}
+.stat-val{font-size:26px;font-weight:800;color:#fff}
+.stat-lbl{font-size:11px;color:rgba(255,255,255,.4)}
+/* Right panel */
+.right{display:flex;align-items:center;justify-content:center;padding:60px}
+.form-wrap{width:100%;max-width:420px}
+.form-title{font-size:28px;font-weight:800;color:#111827;margin-bottom:8px;letter-spacing:-.5px}
+.form-sub{font-size:14px;color:#6B7280;margin-bottom:32px}
+.alert{background:#FEF2F2;border:1px solid rgba(239,68,68,.3);color:#DC2626;padding:12px 16px;border-radius:10px;font-size:13px;margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.form-group{margin-bottom:16px}
+.form-label{display:block;font-size:13px;font-weight:600;color:#111827;margin-bottom:6px}
+.required{color:#EF4444;margin-left:2px}
+.input-wrap{position:relative}
+.input-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#9CA3AF;font-size:14px;pointer-events:none}
+.form-input{width:100%;padding:11px 16px 11px 40px;border:1.5px solid #E5E7EB;border-radius:10px;font-size:13.5px;font-family:'Plus Jakarta Sans',sans-serif;color:#111827;outline:none;transition:all .2s;background:#fff}
+.form-input:focus{border-color:#2563EB;box-shadow:0 0 0 3px rgba(37,99,235,.08)}
+.input-toggle{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#9CA3AF;font-size:13px;padding:0}
+.row{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+.remember{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:#6B7280}
+.remember input{accent-color:#2563EB;width:14px;height:14px}
+.forgot{font-size:13px;color:#2563EB;text-decoration:none;font-weight:600}
+.btn-login{width:100%;padding:13px;background:#2563EB;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-login:hover{background:#1D4ED8;transform:translateY(-1px);box-shadow:0 8px 24px rgba(37,99,235,.3)}
+.btn-login:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.divider{display:flex;align-items:center;gap:12px;margin:24px 0}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:#E5E7EB}
+.divider span{font-size:12px;color:#9CA3AF}
+.demo-box{background:#EFF6FF;border:1px solid rgba(37,99,235,.15);border-radius:12px;padding:16px}
+.demo-title{font-size:12px;font-weight:700;color:#2563EB;text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.demo-row{display:flex;align-items:center;gap:8px;padding:7px 4px;cursor:pointer;border-radius:8px;transition:background .15s}
+.demo-row:hover{background:rgba(37,99,235,.06)}
+.demo-icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;flex-shrink:0}
+.demo-info{flex:1;min-width:0}
+.demo-name{font-size:12px;font-weight:700;color:#111827}
+.demo-email{font-size:11px;color:#9CA3AF;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.demo-pass{font-size:11px;color:#6B7280;flex-shrink:0}
+.footer{text-align:center;font-size:12px;color:#9CA3AF;margin-top:24px}
+/* Spinner */
+.spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* Responsive */
+@media(max-width:768px){body{grid-template-columns:1fr}.left{display:none}.right{padding:32px}}
+</style>
+</head>
+<body>
+
+<!-- LEFT PANEL -->
+<div class="left">
+  <div class="logo">
+    <div class="logo-icon"><i class="fa-solid fa-hexagon-nodes"></i></div>
+    <div>
+      <div class="logo-name">WorkSphere</div>
+      <div class="logo-tag">HR Platform</div>
+    </div>
+  </div>
+
+  <h1 class="hero-title">Enterprise HR<br>Made Simple</h1>
+  <p class="hero-sub">Manage your workforce, attendance, payroll and more — all in one powerful platform.</p>
+
+  <!-- Features — hardcoded list, no template filter needed -->
+  <div class="features">
+    <span class="feature-pill">Attendance</span>
+    <span class="feature-pill">Leave Management</span>
+    <span class="feature-pill">Payroll</span>
+    <span class="feature-pill">Self Service</span>
+    <span class="feature-pill">Reports</span>
+    <span class="feature-pill">Mobile App</span>
+  </div>
+
+  <div class="stats">
+    <div><div class="stat-val">100K+</div><div class="stat-lbl">Employees</div></div>
+    <div><div class="stat-val">99.9%</div><div class="stat-lbl">Uptime</div></div>
+    <div><div class="stat-val">500+</div><div class="stat-lbl">Companies</div></div>
+  </div>
+</div>
+
+<!-- RIGHT PANEL -->
+<div class="right">
+  <div class="form-wrap">
+    <h1 class="form-title">Welcome back 👋</h1>
+    <p class="form-sub">Sign in to your WorkSphere account</p>
+
+    {% if messages %}
+      {% for message in messages %}
+      <div class="alert">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        {{ message }}
+      </div>
+      {% endfor %}
+    {% endif %}
+
+    <form method="post" action="{% url 'authentication:login' %}" id="loginForm">
+      {% csrf_token %}
+
+      <div class="form-group">
+        <label class="form-label" for="email">Email Address <span class="required">*</span></label>
+        <div class="input-wrap">
+          <i class="fa-regular fa-envelope input-icon"></i>
+          <input type="email" id="email" name="email" class="form-input"
+                 placeholder="your@company.com"
+                 value="{{ request.POST.email|default:'' }}"
+                 required autocomplete="email">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="password">Password <span class="required">*</span></label>
+        <div class="input-wrap">
+          <i class="fa-solid fa-lock input-icon"></i>
+          <input type="password" id="password" name="password" class="form-input"
+                 style="padding-right:44px"
+                 placeholder="Enter your password"
+                 required autocomplete="current-password">
+          <button type="button" class="input-toggle" id="togglePwd">
+            <i class="fa-regular fa-eye"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="row">
+        <label class="remember">
+          <input type="checkbox" name="remember_me"> Remember me
+        </label>
+        <a href="{% url 'authentication:forgot_password' %}" class="forgot">Forgot password?</a>
+      </div>
+
+      <button type="submit" class="btn-login" id="loginBtn">
+        <i class="fa-solid fa-arrow-right-to-bracket"></i>
+        Sign In
+      </button>
+    </form>
+
+    <div class="divider"><span>DEMO ACCOUNTS</span></div>
+
+    <div class="demo-box">
+      <div class="demo-title">
+        <i class="fa-solid fa-flask"></i> Click to fill credentials
+      </div>
+
+      <div class="demo-row" onclick="fillDemo('admin@worksphere.hr','Admin@123')">
+        <div class="demo-icon" style="background:#2563EB"><i class="fa-solid fa-shield-halved"></i></div>
+        <div class="demo-info">
+          <div class="demo-name">Super Admin</div>
+          <div class="demo-email">admin@worksphere.hr</div>
+        </div>
+        <div class="demo-pass">Admin@123</div>
+      </div>
+
+      <div class="demo-row" onclick="fillDemo('hr@worksphere.hr','Admin@123')">
+        <div class="demo-icon" style="background:#10B981"><i class="fa-solid fa-users"></i></div>
+        <div class="demo-info">
+          <div class="demo-name">HR Admin</div>
+          <div class="demo-email">hr@worksphere.hr</div>
+        </div>
+        <div class="demo-pass">Admin@123</div>
+      </div>
+
+      <div class="demo-row" onclick="fillDemo('manager@worksphere.hr','Mgr@123')">
+        <div class="demo-icon" style="background:#8B5CF6"><i class="fa-solid fa-user-tie"></i></div>
+        <div class="demo-info">
+          <div class="demo-name">Manager</div>
+          <div class="demo-email">manager@worksphere.hr</div>
+        </div>
+        <div class="demo-pass">Mgr@123</div>
+      </div>
+
+      <div class="demo-row" onclick="fillDemo('employee@worksphere.hr','Emp@123')">
+        <div class="demo-icon" style="background:#F59E0B"><i class="fa-solid fa-person"></i></div>
+        <div class="demo-info">
+          <div class="demo-name">Employee</div>
+          <div class="demo-email">employee@worksphere.hr</div>
+        </div>
+        <div class="demo-pass">Emp@123</div>
+      </div>
+    </div>
+
+    <p class="footer">WorkSphere HR v1.0 &mdash; Enterprise Human Resource Platform</p>
+  </div>
+</div>
+
+<script>
+// Toggle password visibility
+document.getElementById('togglePwd').addEventListener('click', function() {
+  var inp = document.getElementById('password');
+  var ico = this.querySelector('i');
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    ico.classList.replace('fa-eye', 'fa-eye-slash');
+  } else {
+    inp.type = 'password';
+    ico.classList.replace('fa-eye-slash', 'fa-eye');
+  }
+});
+
+// Fill demo credentials
+function fillDemo(email, pass) {
+  document.getElementById('email').value = email;
+  document.getElementById('password').value = pass;
+  document.getElementById('email').focus();
+}
+
+// Show spinner on submit
+document.getElementById('loginForm').addEventListener('submit', function() {
+  var btn = document.getElementById('loginBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Signing in...';
+});
+</script>
+</body>
+</html>

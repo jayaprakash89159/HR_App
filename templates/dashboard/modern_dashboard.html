@@ -1,0 +1,27 @@
+{% extends "base/base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}Welcome to WorkSphere HR{% endblock %}
+
+{% block content %}
+<div style="background:#fff; border-radius:14px; padding:40px; border:1px solid #E2E8F0; text-align:center; max-width:500px; margin:40px auto;">
+  <div style="width:64px; height:64px; background:linear-gradient(135deg,#2563EB,#7C3AED); border-radius:16px; display:inline-flex; align-items:center; justify-content:center; color:#fff; font-size:28px; margin-bottom:20px;">
+    <i class="fas fa-hexagon-nodes"></i>
+  </div>
+  <h2 style="font-size:22px; font-weight:800; color:#0F172A; margin-bottom:8px;">Welcome to WorkSphere HR</h2>
+  <p style="font-size:14px; color:#64748B; margin-bottom:24px; line-height:1.6;">Your account is active. An employee profile will be linked to your account by HR. In the meantime, you can explore available modules using the sidebar.</p>
+  <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+    <a href="/attendance/" style="display:inline-flex; align-items:center; gap:8px; padding:10px 18px; background:#2563EB; color:#fff; border-radius:8px; font-size:13px; font-weight:600; text-decoration:none;">
+      <i class="fas fa-clock"></i> Attendance
+    </a>
+    <a href="/leave/" style="display:inline-flex; align-items:center; gap:8px; padding:10px 18px; background:#EFF6FF; color:#1D4ED8; border-radius:8px; font-size:13px; font-weight:600; text-decoration:none; border:1px solid #BFDBFE;">
+      <i class="fas fa-calendar-days"></i> Leave
+    </a>
+    {% if user.is_staff %}
+    <a href="/admin/" style="display:inline-flex; align-items:center; gap:8px; padding:10px 18px; background:#F1F5F9; color:#475569; border-radius:8px; font-size:13px; font-weight:600; text-decoration:none; border:1px solid #E2E8F0;" target="_blank">
+      <i class="fas fa-screwdriver-wrench"></i> Admin Panel
+    </a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

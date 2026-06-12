@@ -1,0 +1,85 @@
+{% extends "base/base.html" %}
+{% block title %}Manager Dashboard{% endblock %}
+{% block page_title %}Good {{ greeting }}, {% if employee %}{{ employee.first_name }}{% else %}{{ user.email|truncatechars:15 }}{% endif %} 👋{% endblock %}
+{% block page_subtitle %}{{ today|date:"l, d F Y" }} &mdash; Manager Overview{% endblock %}
+
+{% block content %}
+
+<!-- Team Stats -->
+<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:16px; margin-bottom:24px;">
+
+  <div style="background:#fff; border-radius:14px; padding:20px; border:1px solid #E2E8F0; text-align:center;">
+    <div style="width:48px; height:48px; background:#DBEAFE; border-radius:12px; display:inline-flex; align-items:center; justify-content:center; color:#2563EB; font-size:22px; margin-bottom:10px;"><i class="fas fa-users"></i></div>
+    <div style="font-size:28px; font-weight:800; color:#0F172A;">{{ team_count }}</div>
+    <div style="font-size:12px; color:#64748B;">Team Members</div>
+  </div>
+
+  <div style="background:#fff; border-radius:14px; padding:20px; border:1px solid #E2E8F0; text-align:center;">
+    <div style="width:48px; height:48px; background:#D1FAE5; border-radius:12px; display:inline-flex; align-items:center; justify-content:center; color:#10B981; font-size:22px; margin-bottom:10px;"><i class="fas fa-circle-check"></i></div>
+    <div style="font-size:28px; font-weight:800; color:#0F172A;">{{ team_present }}</div>
+    <div style="font-size:12px; color:#64748B;">Present Today</div>
+  </div>
+
+  <div style="background:#fff; border-radius:14px; padding:20px; border:1px solid #E2E8F0; text-align:center;">
+    <div style="width:48px; height:48px; background:#FEE2E2; border-radius:12px; display:inline-flex; align-items:center; justify-content:center; color:#EF4444; font-size:22px; margin-bottom:10px;"><i class="fas fa-circle-xmark"></i></div>
+    <div style="font-size:28px; font-weight:800; color:#0F172A;">{{ team_absent }}</div>
+    <div style="font-size:12px; color:#64748B;">Absent Today</div>
+  </div>
+
+  <div style="background:#fff; border-radius:14px; padding:20px; border:1px solid #E2E8F0; text-align:center;">
+    <div style="width:48px; height:48px; background:#FEF3C7; border-radius:12px; display:inline-flex; align-items:center; justify-content:center; color:#F59E0B; font-size:22px; margin-bottom:10px;"><i class="fas fa-hourglass-half"></i></div>
+    <div style="font-size:28px; font-weight:800; color:#0F172A;">{{ pending_leaves|length }}</div>
+    <div style="font-size:12px; color:#64748B;">Pending Leave Requests</div>
+  </div>
+
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+
+  <!-- Team Members -->
+  <div style="background:#fff; border-radius:14px; padding:20px; border:1px solid #E2E8F0;">
+    <div style="font-size:14px; font-weight:700; color:#0F172A; margin-bottom:16px;"><i class="fas fa-users" style="color:#2563EB; margin-right:8px;"></i>My Team</div>
+    {% if team %}
+      {% for member in team %}
+      <div style="display:flex; align-items:center; gap:12px; padding:8px 0; border-bottom:1px solid #F8FAFC;">
+        <div style="width:36px; height:36px; background:linear-gradient(135deg,#3B82F6,#1D4ED8); border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:13px; flex-shrink:0;">
+          {{ member.first_name|first }}{{ member.last_name|first }}
+        </div>
+        <div>
+          <div style="font-size:13px; font-weight:600; color:#0F172A;">{{ member.first_name }} {{ member.last_name }}</div>
+          <div style="font-size:11px; color:#94A3B8;">{{ member.designation.name }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <p style="color:#94A3B8; font-size:13px; text-align:center; padding:20px 0;">No team members assigned</p>
+    {% endif %}
+  </div>
+
+  <!-- Pending Leave Approvals -->
+  <div style="background:#fff; border-radius:14px; padding:20px; border:1px solid #E2E8F0;">
+    <div style="font-size:14px; font-weight:700; color:#0F172A; margin-bottom:16px;"><i class="fas fa-check-double" style="color:#F59E0B; margin-right:8px;"></i>Pending Leave Requests</div>
+    {% if pending_leaves %}
+      {% for leave in pending_leaves %}
+      <div style="padding:10px 0; border-bottom:1px solid #F8FAFC;">
+        <div style="display:flex; justify-content:space-between; align-items:start;">
+          <div>
+            <div style="font-size:13px; font-weight:600; color:#0F172A;">{{ leave.employee.first_name }} {{ leave.employee.last_name }}</div>
+            <div style="font-size:11px; color:#64748B;">{{ leave.leave_type.name }} &bull; {{ leave.total_days }} day(s)</div>
+            <div style="font-size:11px; color:#94A3B8;">{{ leave.from_date|date:"d M" }} – {{ leave.to_date|date:"d M Y" }}</div>
+          </div>
+          <span style="font-size:11px; background:#FEF3C7; color:#92400E; padding:3px 8px; border-radius:20px; font-weight:600;">Pending</span>
+        </div>
+      </div>
+      {% endfor %}
+      <a href="/leave/requests/" style="display:inline-flex; align-items:center; gap:6px; padding:8px 14px; background:#FEF3C7; color:#92400E; border-radius:8px; font-size:12px; font-weight:600; text-decoration:none; margin-top:12px;">
+        Review All Requests →
+      </a>
+    {% else %}
+      <p style="color:#94A3B8; font-size:13px; text-align:center; padding:20px 0;">No pending leave requests 🎉</p>
+    {% endif %}
+  </div>
+
+</div>
+
+{% endblock %}

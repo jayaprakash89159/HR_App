@@ -1,0 +1,144 @@
+{% extends "base/base.html" %}
+{% block title %}Employees{% endblock %}
+{% block page_title %}Employee Directory{% endblock %}
+{% block page_subtitle %}Manage and view all employees{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header with Actions -->
+    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div class="flex-1">
+            <div class="relative">
+                <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                <input type="text" id="searchInput" placeholder="Search employees..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+            </div>
+        </div>
+        <div class="flex gap-2">
+            <select id="departmentFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500">
+                <option value="">All Departments</option>
+                <option value="engineering">Engineering</option>
+                <option value="hr">Human Resources</option>
+                <option value="sales">Sales</option>
+                <option value="marketing">Marketing</option>
+            </select>
+            <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition">
+                <i class="fas fa-plus mr-2"></i> Add Employee
+            </button>
+        </div>
+    </div>
+
+    <!-- Employees Table -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="bg-gray-50 border-b border-gray-200">
+                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">Employee</th>
+                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">Position</th>
+                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">Department</th>
+                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">Status</th>
+                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">Join Date</th>
+                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="employeeTable" class="divide-y divide-gray-200">
+                    <!-- Sample Row (will be populated by JavaScript or API) -->
+                    <tr class="hover:bg-gray-50 transition">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-bold">
+                                    JD
+                                </div>
+                                <div>
+                                    <p class="font-medium text-gray-900">John Doe</p>
+                                    <p class="text-xs text-gray-500">john.doe@company.com</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-700">Senior Developer</td>
+                        <td class="px-6 py-4 text-sm text-gray-700">Engineering</td>
+                        <td class="px-6 py-4">
+                            <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">
+                                <i class="fas fa-circle w-2 h-2"></i> Active
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-700">Jan 15, 2022</td>
+                        <td class="px-6 py-4 text-sm">
+                            <button class="text-blue-600 hover:text-blue-700 mr-4" title="View">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="text-blue-600 hover:text-blue-700 mr-4" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="text-red-600 hover:text-red-700" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="px-6 py-4 border-t border-gray-200 flex items-center justify-between bg-gray-50">
+            <p class="text-sm text-gray-600">Showing 1 to 10 of 45 employees</p>
+            <div class="flex gap-2">
+                <button class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 text-sm font-medium">Previous</button>
+                <button class="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium">1</button>
+                <button class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 text-sm font-medium">2</button>
+                <button class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 text-sm font-medium">Next</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm font-medium">Total Employees</p>
+                    <h3 class="text-3xl font-bold text-gray-900 mt-2">245</h3>
+                </div>
+                <i class="fas fa-users text-4xl text-blue-200"></i>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm font-medium">Active Today</p>
+                    <h3 class="text-3xl font-bold text-gray-900 mt-2">238</h3>
+                    <p class="text-xs text-green-600 mt-2">97% Attendance</p>
+                </div>
+                <i class="fas fa-check-circle text-4xl text-green-200"></i>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm font-medium">On Leave</p>
+                    <h3 class="text-3xl font-bold text-gray-900 mt-2">7</h3>
+                    <p class="text-xs text-blue-600 mt-2">3% of workforce</p>
+                </div>
+                <i class="fas fa-calendar-days text-4xl text-orange-200"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Search functionality
+    const searchInput = document.getElementById('searchInput');
+    searchInput?.addEventListener('input', function() {
+        const query = this.value.toLowerCase();
+        showToast(`Searching for: ${query}`, 'info', 1000);
+    });
+
+    // Department filter
+    const deptFilter = document.getElementById('departmentFilter');
+    deptFilter?.addEventListener('change', function() {
+        if (this.value) {
+            showToast(`Filtering by: ${this.options[this.selectedIndex].text}`, 'info', 1000);
+        }
+    });
+</script>
+{% endblock %}
