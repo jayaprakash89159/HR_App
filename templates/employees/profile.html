@@ -1,21 +1,46 @@
 {% extends "base/base.html" %}
-{% block title %}Profile{% endblock %}
-{% block breadcrumb %}<span class="current">Profile</span>{% endblock %}
+{% block title %}Employee Profile{% endblock %}
+{% block page_title %}Employee Profile{% endblock %}
+{% block page_subtitle %}View and manage employee details{% endblock %}
 {% block content %}
-<div class="ws-page-header">
-  <div>
-    <h1 class="ws-page-title">Profile</h1>
-    <p class="ws-page-subtitle">WorkSphere HR</p>
-  </div>
+<div id="profilePage" class="space-y-6">
+    <div class="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-8 text-white flex items-center gap-6">
+        <div style="width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:800;" id="profileInitials">?</div>
+        <div>
+            <h2 id="profileName" class="text-2xl font-bold">Loading…</h2>
+            <p id="profileDesig" class="text-blue-200 mt-1"></p>
+            <p id="profileDept" class="text-blue-100 text-sm mt-1"></p>
+        </div>
+    </div>
+    <div id="profileDetails" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div class="py-10 text-center text-gray-400 col-span-2"><i class="fas fa-spinner fa-spin mr-2"></i>Loading profile…</div>
+    </div>
 </div>
-<div class="ws-card">
-  <div class="ws-card-body" style="padding:40px;text-align:center">
-    <i class="fa-solid fa-gear fa-3x" style="color:var(--ws-primary);opacity:0.3;margin-bottom:16px"></i>
-    <h4 style="color:var(--ws-text-secondary)">Module Under Development</h4>
-    <p style="color:var(--ws-text-muted);font-size:13px">This section will be available soon.</p>
-    <a href="/" class="ws-btn ws-btn-primary" style="display:inline-flex;margin-top:16px">
-      <i class="fa-solid fa-house"></i> Back to Dashboard
-    </a>
-  </div>
-</div>
+<script>
+async function loadProfile() {
+    try {
+        const r = await fetch('/api/v1/employees/me/', {credentials:'include'});
+        if (!r.ok) throw new Error(r.status);
+        const emp = await r.json();
+        document.getElementById('profileName').textContent = emp.full_name;
+        document.getElementById('profileDesig').textContent = emp.designation?.name||'';
+        document.getElementById('profileDept').textContent = emp.department?.name||'';
+        const initials = ((emp.first_name||'')[0]||'?').toUpperCase() + ((emp.last_name||'')[0]||'').toUpperCase();
+        document.getElementById('profileInitials').textContent = initials;
+        document.getElementById('profileDetails').innerHTML = [
+            ['Employee ID', emp.employee_id],
+            ['Email', emp.email],
+            ['Location', emp.location?.name||'—'],
+            ['Date of Joining', emp.date_of_joining ? new Date(emp.date_of_joining).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'}) : '—'],
+            ['Gender', emp.gender||'—'],
+            ['Phone', emp.phone||'—'],
+            ['Date of Birth', emp.date_of_birth ? new Date(emp.date_of_birth).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'}) : '—'],
+            ['Status', emp.status],
+        ].map(([l,v])=>`<div class="bg-white rounded-xl shadow-sm border p-5"><p class="text-xs text-gray-400 font-medium uppercase tracking-wider mb-1">${l}</p><p class="text-sm font-semibold text-gray-900">${v||'—'}</p></div>`).join('');
+    } catch(e) {
+        document.getElementById('profileDetails').innerHTML = '<div class="col-span-2 py-10 text-center text-gray-400">Could not load profile. Please try again.</div>';
+    }
+}
+loadProfile();
+</script>
 {% endblock %}

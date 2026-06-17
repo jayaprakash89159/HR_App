@@ -87,7 +87,7 @@
     <a href="/attendance/team/" style="display:inline-flex; align-items:center; gap:8px; padding:10px 18px; background:#FEE2E2; color:#991B1B; border-radius:8px; font-size:13px; font-weight:600; text-decoration:none; border:1px solid #FCA5A5;">
       <i class="fas fa-calendar-check"></i> Team Attendance
     </a>
-    {% if user.is_staff %}
+    {% if user.is_admin_portal and user.is_staff %}
     <a href="/admin/" style="display:inline-flex; align-items:center; gap:8px; padding:10px 18px; background:#F1F5F9; color:#475569; border-radius:8px; font-size:13px; font-weight:600; text-decoration:none; border:1px solid #E2E8F0;" target="_blank">
       <i class="fas fa-screwdriver-wrench"></i> Django Admin
     </a>

@@ -1,144 +1,154 @@
 {% extends "base/base.html" %}
-{% block title %}Employees{% endblock %}
+{% block title %}Employee Directory{% endblock %}
 {% block page_title %}Employee Directory{% endblock %}
-{% block page_subtitle %}Manage and view all employees{% endblock %}
+{% block page_subtitle %}View and manage all employees{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
-    <!-- Header with Actions -->
-    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div class="flex-1">
-            <div class="relative">
-                <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
-                <input type="text" id="searchInput" placeholder="Search employees..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
-            </div>
+<div class="space-y-5">
+
+    <!-- Search & Filters -->
+    <div class="bg-white rounded-xl shadow-sm p-4 border border-gray-100 flex flex-wrap gap-3 items-center">
+        <div class="relative flex-1 min-w-48">
+            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+            <input type="text" id="searchInput" placeholder="Search by name, ID, email…"
+                   class="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                   oninput="debounceSearch()">
         </div>
-        <div class="flex gap-2">
-            <select id="departmentFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500">
-                <option value="">All Departments</option>
-                <option value="engineering">Engineering</option>
-                <option value="hr">Human Resources</option>
-                <option value="sales">Sales</option>
-                <option value="marketing">Marketing</option>
-            </select>
-            <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition">
-                <i class="fas fa-plus mr-2"></i> Add Employee
-            </button>
+        <select id="deptFilter" onchange="loadEmployees()" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+            <option value="">All Departments</option>
+        </select>
+        <select id="statusFilter" onchange="loadEmployees()" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+            <option value="active">Active</option>
+            <option value="">All</option>
+            <option value="inactive">Inactive</option>
+        </select>
+        <a href="/admin/employees/employee/add/" target="_blank"
+           class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700">
+            <i class="fas fa-plus mr-2"></i> Add Employee
+        </a>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-white rounded-xl p-4 border shadow-sm"><p class="text-xs text-gray-500">Total Active</p><h3 id="statTotal" class="text-2xl font-bold text-gray-900 mt-1">—</h3></div>
+        <div class="bg-white rounded-xl p-4 border shadow-sm"><p class="text-xs text-gray-500">Departments</p><h3 id="statDepts" class="text-2xl font-bold text-gray-900 mt-1">—</h3></div>
+        <div class="bg-white rounded-xl p-4 border shadow-sm"><p class="text-xs text-gray-500">Shown</p><h3 id="statShown" class="text-2xl font-bold text-gray-900 mt-1">—</h3></div>
+        <div class="bg-white rounded-xl p-4 border shadow-sm"><p class="text-xs text-gray-500">Export</p>
+            <div class="flex gap-1 mt-1">
+                <a href="/reports/employees/export/csv/" class="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded font-semibold">CSV</a>
+                <a href="/reports/employees/export/xlsx/" class="text-xs px-2 py-1 bg-green-100 text-green-700 rounded font-semibold">Excel</a>
+            </div>
         </div>
     </div>
 
-    <!-- Employees Table -->
+    <!-- Table -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full">
                 <thead>
-                    <tr class="bg-gray-50 border-b border-gray-200">
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">Employee</th>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">Position</th>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">Department</th>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">Status</th>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">Join Date</th>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">Actions</th>
+                    <tr class="bg-gray-50 border-b text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        <th class="px-4 py-3">Employee</th>
+                        <th class="px-4 py-3">ID</th>
+                        <th class="px-4 py-3">Department</th>
+                        <th class="px-4 py-3">Designation</th>
+                        <th class="px-4 py-3">Location</th>
+                        <th class="px-4 py-3">Joined</th>
+                        <th class="px-4 py-3">Status</th>
+                        <th class="px-4 py-3">Actions</th>
                     </tr>
                 </thead>
-                <tbody id="employeeTable" class="divide-y divide-gray-200">
-                    <!-- Sample Row (will be populated by JavaScript or API) -->
-                    <tr class="hover:bg-gray-50 transition">
-                        <td class="px-6 py-4">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-bold">
-                                    JD
-                                </div>
-                                <div>
-                                    <p class="font-medium text-gray-900">John Doe</p>
-                                    <p class="text-xs text-gray-500">john.doe@company.com</p>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 text-sm text-gray-700">Senior Developer</td>
-                        <td class="px-6 py-4 text-sm text-gray-700">Engineering</td>
-                        <td class="px-6 py-4">
-                            <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">
-                                <i class="fas fa-circle w-2 h-2"></i> Active
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 text-sm text-gray-700">Jan 15, 2022</td>
-                        <td class="px-6 py-4 text-sm">
-                            <button class="text-blue-600 hover:text-blue-700 mr-4" title="View">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            <button class="text-blue-600 hover:text-blue-700 mr-4" title="Edit">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="text-red-600 hover:text-red-700" title="Delete">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
+                <tbody id="employeeBody" class="divide-y divide-gray-100">
+                    <tr><td colspan="8" class="px-4 py-10 text-center text-sm text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>Loading employees…</td></tr>
                 </tbody>
             </table>
-        </div>
-
-        <!-- Pagination -->
-        <div class="px-6 py-4 border-t border-gray-200 flex items-center justify-between bg-gray-50">
-            <p class="text-sm text-gray-600">Showing 1 to 10 of 45 employees</p>
-            <div class="flex gap-2">
-                <button class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 text-sm font-medium">Previous</button>
-                <button class="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium">1</button>
-                <button class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 text-sm font-medium">2</button>
-                <button class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 text-sm font-medium">Next</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Statistics -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-gray-500 text-sm font-medium">Total Employees</p>
-                    <h3 class="text-3xl font-bold text-gray-900 mt-2">245</h3>
-                </div>
-                <i class="fas fa-users text-4xl text-blue-200"></i>
-            </div>
-        </div>
-        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-gray-500 text-sm font-medium">Active Today</p>
-                    <h3 class="text-3xl font-bold text-gray-900 mt-2">238</h3>
-                    <p class="text-xs text-green-600 mt-2">97% Attendance</p>
-                </div>
-                <i class="fas fa-check-circle text-4xl text-green-200"></i>
-            </div>
-        </div>
-        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-gray-500 text-sm font-medium">On Leave</p>
-                    <h3 class="text-3xl font-bold text-gray-900 mt-2">7</h3>
-                    <p class="text-xs text-blue-600 mt-2">3% of workforce</p>
-                </div>
-                <i class="fas fa-calendar-days text-4xl text-orange-200"></i>
-            </div>
         </div>
     </div>
 </div>
 
 <script>
-    // Search functionality
-    const searchInput = document.getElementById('searchInput');
-    searchInput?.addEventListener('input', function() {
-        const query = this.value.toLowerCase();
-        showToast(`Searching for: ${query}`, 'info', 1000);
-    });
+let searchTimer;
+function debounceSearch() {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(loadEmployees, 350);
+}
 
-    // Department filter
-    const deptFilter = document.getElementById('departmentFilter');
-    deptFilter?.addEventListener('change', function() {
-        if (this.value) {
-            showToast(`Filtering by: ${this.options[this.selectedIndex].text}`, 'info', 1000);
+async function loadDepartments() {
+    try {
+        const r = await fetch('/api/v1/employees/departments/', {credentials:'include'});
+        const depts = await r.json();
+        const sel = document.getElementById('deptFilter');
+        depts.forEach(d => {
+            const opt = document.createElement('option');
+            opt.value = d.id; opt.textContent = d.name;
+            sel.appendChild(opt);
+        });
+        document.getElementById('statDepts').textContent = depts.length;
+    } catch(e) {}
+}
+
+async function loadEmployees() {
+    const tbody = document.getElementById('employeeBody');
+    tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-8 text-center text-sm text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>Loading…</td></tr>';
+
+    const search = document.getElementById('searchInput')?.value || '';
+    const dept = document.getElementById('deptFilter')?.value || '';
+    const empStatus = document.getElementById('statusFilter')?.value || 'active';
+    let url = `/api/v1/employees/?status=${empStatus}`;
+    if (search) url += `&search=${encodeURIComponent(search)}`;
+    if (dept) url += `&department=${dept}`;
+
+    try {
+        const r = await fetch(url, {credentials:'include'});
+        if (!r.ok) throw new Error(r.status);
+        const data = await r.json();
+        const employees = data.results || data;
+        const total = data.count || employees.length;
+
+        document.getElementById('statTotal').textContent = total;
+        document.getElementById('statShown').textContent = employees.length;
+
+        if (!employees.length) {
+            tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-10 text-center text-sm text-gray-400">No employees found.</td></tr>';
+            return;
         }
-    });
+
+        tbody.innerHTML = employees.map(emp => {
+            const initials = ((emp.first_name||'')[0]||'') + ((emp.last_name||'')[0]||'');
+            const colors = ['#3B82F6','#10B981','#8B5CF6','#F59E0B','#EF4444','#06B6D4'];
+            const color = colors[emp.full_name.charCodeAt(0) % colors.length];
+            const joined = emp.date_of_joining ? new Date(emp.date_of_joining).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) : '—';
+            return `<tr class="hover:bg-gray-50 transition">
+                <td class="px-4 py-3">
+                    <div class="flex items-center gap-3">
+                        <div style="width:36px;height:36px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px;flex-shrink:0;">${initials.toUpperCase()}</div>
+                        <div>
+                            <div class="text-sm font-semibold text-gray-900">${emp.full_name}</div>
+                            <div class="text-xs text-gray-400">${emp.email}</div>
+                        </div>
+                    </div>
+                </td>
+                <td class="px-4 py-3 text-sm font-mono text-blue-600">${emp.employee_id}</td>
+                <td class="px-4 py-3 text-sm text-gray-600">${emp.department?.name || '—'}</td>
+                <td class="px-4 py-3 text-sm text-gray-600">${emp.designation?.name || '—'}</td>
+                <td class="px-4 py-3 text-sm text-gray-500">${emp.location?.name || '—'}</td>
+                <td class="px-4 py-3 text-sm text-gray-500">${joined}</td>
+                <td class="px-4 py-3">
+                    <span class="inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${emp.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}">
+                        ${emp.status}
+                    </span>
+                </td>
+                <td class="px-4 py-3">
+                    <a href="/admin/employees/employee/${emp.id}/change/" target="_blank" class="text-blue-600 hover:underline text-xs">Edit</a>
+                </td>
+            </tr>`;
+        }).join('');
+    } catch(e) {
+        console.error(e);
+        tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-8 text-center text-sm text-red-400">Failed to load employees. Please refresh.</td></tr>';
+    }
+}
+
+loadDepartments();
+loadEmployees();
 </script>
 {% endblock %}

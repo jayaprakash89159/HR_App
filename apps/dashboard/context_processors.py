@@ -19,12 +19,12 @@ def worksphere_settings(request):
         }
 
     # Pending approvals count for managers/HR
-    if request.user.is_authenticated and request.user.role in ('manager', 'hr_admin', 'super_admin'):
+    if request.user.is_authenticated and (request.user.is_manager or request.user.is_hr_admin or request.user.is_super_admin):
         try:
             from apps.leave_management.models import LeaveApplication
             from apps.employees.models import Employee
 
-            if request.user.role in ('hr_admin', 'super_admin'):
+            if request.user.is_hr_admin or request.user.is_super_admin:
                 ctx['pending_leave_count'] = LeaveApplication.objects.filter(status='pending').count()
             else:
                 try:

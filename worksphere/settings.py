@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'apps.notifications',
     'apps.audit',
     'apps.dashboard',
+    'apps.hr_admin',
     'apps.reports',
     'apps.api',
 ]

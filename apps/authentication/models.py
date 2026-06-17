@@ -28,11 +28,22 @@ class User(AbstractBaseUser, PermissionsMixin):
     ROLE_CHOICES = [
         ('super_admin', 'Super Admin'),
         ('hr_admin', 'HR Admin'),
+        ('hr_executive', 'HR Executive'),
         ('payroll_admin', 'Payroll Admin'),
+        ('finance', 'Finance'),
         ('manager', 'Manager'),
+        ('reporting_manager', 'Reporting Manager'),
+        ('project_manager', 'Project Manager'),
         ('employee', 'Employee'),
         ('auditor', 'Auditor'),
     ]
+
+    EMPLOYEE_ROLES = {'employee', 'manager', 'reporting_manager', 'project_manager'}
+    MANAGER_ROLES = {'manager', 'reporting_manager', 'project_manager'}
+    HR_ROLES = {'super_admin', 'hr_admin', 'hr_executive'}
+    PAYROLL_ROLES = {'super_admin', 'payroll_admin', 'finance'}
+    REPORTING_ROLES = HR_ROLES | {'auditor', 'reporting_manager', 'finance', 'payroll_admin'}
+    ADMIN_ROLES = HR_ROLES | PAYROLL_ROLES | {'auditor'}
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(unique=True)
@@ -72,6 +83,89 @@ class User(AbstractBaseUser, PermissionsMixin):
         if self.locked_until and timezone.now() < self.locked_until:
             return True
         return False
+
+    @property
+    def is_super_admin(self):
+        return self.role == 'super_admin'
+
+    @property
+    def is_hr_admin(self):
+        return self.role == 'hr_admin'
+
+    @property
+    def is_hr_executive(self):
+        return self.role == 'hr_executive'
+
+    @property
+    def is_payroll_admin(self):
+        return self.role == 'payroll_admin'
+
+    @property
+    def is_finance(self):
+        return self.role == 'finance'
+
+    @property
+    def is_manager(self):
+        return self.role == 'manager'
+
+    @property
+    def is_reporting_manager(self):
+        return self.role == 'reporting_manager'
+
+    @property
+    def is_project_manager(self):
+        return self.role == 'project_manager'
+
+    @property
+    def is_employee(self):
+        return self.role == 'employee'
+
+    @property
+    def is_employee_portal(self):
+        return self.role in self.EMPLOYEE_ROLES
+
+    @property
+    def is_hr_portal(self):
+        return self.role in self.HR_ROLES or self.role == 'super_admin'
+
+    @property
+    def is_payroll_portal(self):
+        return self.role in self.PAYROLL_ROLES or self.role == 'super_admin'
+
+    @property
+    def is_reporting_portal(self):
+        return self.role in self.REPORTING_ROLES
+
+    @property
+    def is_admin_portal(self):
+        return self.role in self.ADMIN_ROLES
+
+    @property
+    def can_access_reports(self):
+        return self.role in self.REPORTING_ROLES or self.role in self.HR_ROLES or self.role == 'super_admin'
+
+    @property
+    def can_view_team_attendance(self):
+        return self.role in self.MANAGER_ROLES or self.role in self.HR_ROLES or self.role == 'super_admin'
+
+    @property
+    def can_manage_users(self):
+        return self.role in self.ADMIN_ROLES
+
+    @property
+    def can_manage_employees(self):
+        return self.role in self.HR_ROLES or self.role == 'super_admin'
+
+    @property
+    def can_manage_payroll(self):
+        return self.role in self.PAYROLL_ROLES or self.role == 'super_admin'
+
+    @property
+    def can_approve_leaves(self):
+        return self.role in self.MANAGER_ROLES or self.role in self.HR_ROLES or self.role == 'super_admin'
+
+    def has_role(self, *roles):
+        return self.role in set(roles)
 
 
 class LoginHistory(models.Model):

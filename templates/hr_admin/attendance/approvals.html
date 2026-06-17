@@ -1,0 +1,94 @@
+{% extends "base/base.html" %}
+{% block title %}Attendance Approvals{% endblock %}
+{% block page_title %}Attendance Approvals{% endblock %}
+{% block page_subtitle %}Review punches with photo & location before they count in reports{% endblock %}
+
+{% block content %}
+<div class="space-y-5">
+
+  <div class="flex flex-wrap gap-3 items-center justify-between">
+    <div class="flex gap-2">
+      <a href="?status=pending" class="px-4 py-2 text-sm font-semibold rounded-lg {% if status_f == 'pending' %}bg-yellow-500 text-white{% else %}bg-white text-gray-700 border border-gray-200{% endif %}">
+        Pending {% if pending_count %}<span class="ml-1 px-1.5 py-0.5 bg-white bg-opacity-30 rounded-full text-xs">{{ pending_count }}</span>{% endif %}
+      </a>
+      <a href="?status=approved" class="px-4 py-2 text-sm font-semibold rounded-lg {% if status_f == 'approved' %}bg-green-600 text-white{% else %}bg-white text-gray-700 border border-gray-200{% endif %}">Approved</a>
+      <a href="?status=rejected" class="px-4 py-2 text-sm font-semibold rounded-lg {% if status_f == 'rejected' %}bg-red-600 text-white{% else %}bg-white text-gray-700 border border-gray-200{% endif %}">Rejected</a>
+      <a href="?status=" class="px-4 py-2 text-sm font-semibold rounded-lg {% if not status_f %}bg-blue-600 text-white{% else %}bg-white text-gray-700 border border-gray-200{% endif %}">All</a>
+    </div>
+    <a href="{% url 'hr_admin:attendance_list' %}" class="text-sm text-blue-600 hover:underline"><i class="fas fa-table mr-1"></i>View All Attendance Records</a>
+  </div>
+
+  <div class="space-y-3">
+    {% for r in records %}
+    <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
+      <div class="flex flex-wrap items-stretch">
+
+        <!-- Photo strip -->
+        <div class="flex gap-2 p-3 bg-gray-50 border-r border-gray-100">
+          {% if r.clock_in_selfie %}
+          <div class="text-center">
+            <img src="{{ r.clock_in_selfie.url }}" class="w-20 h-20 object-cover rounded-lg border border-gray-200">
+            <p class="text-[10px] text-gray-400 mt-1">Clock In</p>
+          </div>
+          {% else %}
+          <div class="w-20 h-20 rounded-lg bg-gray-100 flex items-center justify-center text-gray-300"><i class="fas fa-user text-2xl"></i></div>
+          {% endif %}
+          {% if r.clock_out_selfie %}
+          <div class="text-center">
+            <img src="{{ r.clock_out_selfie.url }}" class="w-20 h-20 object-cover rounded-lg border border-gray-200">
+            <p class="text-[10px] text-gray-400 mt-1">Clock Out</p>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Details -->
+        <div class="flex-1 p-4 min-w-0">
+          <div class="flex items-start justify-between gap-3 flex-wrap">
+            <div>
+              <h3 class="font-bold text-gray-900">{{ r.employee.get_full_name }}</h3>
+              <p class="text-xs text-gray-400">{{ r.employee.employee_code }} &middot; {{ r.employee.department.name|default:"—" }} &middot; {{ r.date|date:"d M Y" }}</p>
+            </div>
+            <span class="inline-flex px-2 py-0.5 text-xs font-semibold rounded-full
+              {% if r.approval_status == 'approved' %}bg-green-100 text-green-700
+              {% elif r.approval_status == 'rejected' %}bg-red-100 text-red-700
+              {% else %}bg-yellow-100 text-yellow-700{% endif %}">{{ r.get_approval_status_display }}</span>
+          </div>
+
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3 text-sm">
+            <div><p class="text-xs text-gray-400">Check In</p><p class="font-semibold">{% if r.clock_in %}{{ r.clock_in|time:"H:i" }}{% else %}—{% endif %}</p></div>
+            <div><p class="text-xs text-gray-400">Check Out</p><p class="font-semibold">{% if r.clock_out %}{{ r.clock_out|time:"H:i" }}{% else %}—{% endif %}</p></div>
+            <div><p class="text-xs text-gray-400">Hours</p><p class="font-semibold">{% widthratio r.effective_working_minutes 60 1 %}h</p></div>
+            <div><p class="text-xs text-gray-400">Status</p><p class="font-semibold">{{ r.get_status_display }}</p></div>
+          </div>
+
+          <div class="mt-2 flex items-center gap-3 text-xs text-gray-500">
+            <span><i class="fas fa-map-marker-alt mr-1"></i>
+              {% if r.clock_in_latitude %}{{ r.clock_in_latitude }}, {{ r.clock_in_longitude }}
+                {% if r.clock_in_within_geofence == True %}<span class="text-green-600 font-semibold">(in geo-fence)</span>
+                {% elif r.clock_in_within_geofence == False %}<span class="text-red-500 font-semibold">(outside geo-fence)</span>{% endif %}
+              {% else %}No location captured{% endif %}
+            </span>
+          </div>
+
+          {% if r.approval_status == 'pending' %}
+          <form method="post" action="{% url 'hr_admin:attendance_approve_action' r.id %}" class="mt-3 flex flex-wrap gap-2 items-center">
+            {% csrf_token %}
+            <input type="text" name="remarks" placeholder="Remarks (optional)" class="flex-1 min-w-40 px-3 py-1.5 border border-gray-300 rounded-lg text-xs">
+            <button type="submit" name="decision" value="approved" class="px-4 py-1.5 bg-green-600 text-white text-xs font-semibold rounded-lg hover:bg-green-700"><i class="fas fa-check mr-1"></i>Approve</button>
+            <button type="submit" name="decision" value="rejected" class="px-4 py-1.5 bg-red-500 text-white text-xs font-semibold rounded-lg hover:bg-red-600"><i class="fas fa-times mr-1"></i>Reject</button>
+          </form>
+          {% elif r.approved_by %}
+          <p class="mt-2 text-xs text-gray-400">{{ r.get_approval_status_display }} by {{ r.approved_by.email }} on {{ r.approved_at|date:"d M Y H:i" }}{% if r.approval_remarks %} — "{{ r.approval_remarks }}"{% endif %}</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="bg-white rounded-xl shadow-sm border p-12 text-center text-sm text-gray-400">
+      <i class="fas fa-circle-check text-4xl text-green-200 mb-3"></i><br>
+      No {{ status_f|default:"" }} attendance punches to review.
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

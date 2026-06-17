@@ -1,0 +1,23 @@
+{% extends "base/base.html" %}
+{% block title %}Bulk Upload Attendance{% endblock %}
+{% block page_title %}Bulk Upload Attendance{% endblock %}
+{% block content %}
+<div class="max-w-2xl space-y-5">
+  {% if messages %}{% for m in messages %}<div class="p-3 rounded-lg text-sm {% if m.tags == 'success' %}bg-green-50 text-green-700{% else %}bg-red-50 text-red-700{% endif %}">{{ m }}</div>{% endfor %}{% endif %}
+  <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-800"><strong>Required:</strong> employee_code, date &nbsp;|&nbsp; <strong>Optional:</strong> clock_in (HH:MM), clock_out (HH:MM), status</div>
+  <div class="bg-white rounded-xl shadow-sm border p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-bold text-gray-900">Upload CSV</h3>
+      <a href="{% url 'hr_admin:attendance_csv_template' %}" class="px-3 py-1.5 bg-gray-100 text-gray-700 text-xs font-semibold rounded-lg"><i class="fas fa-download mr-1"></i>Template</a>
+    </div>
+    <form method="post" enctype="multipart/form-data" class="space-y-3">{% csrf_token %}
+      <div onclick="document.getElementById('fi').click()" class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition">
+        <i class="fas fa-cloud-upload-alt text-4xl text-gray-300 mb-2"></i><p class="text-sm font-semibold text-gray-600">Click to select CSV</p><p id="fn" class="text-xs text-blue-600 mt-1 font-semibold"></p>
+      </div>
+      <input type="file" id="fi" name="csv_file" accept=".csv" class="hidden" onchange="document.getElementById('fn').textContent=this.files[0]?.name||''">
+      <button type="submit" class="w-full py-3 bg-emerald-600 text-white font-semibold rounded-xl text-sm"><i class="fas fa-upload mr-2"></i>Upload & Process</button>
+    </form>
+  </div>
+  <a href="{% url 'hr_admin:attendance_list' %}" class="text-sm text-blue-600 hover:underline"><i class="fas fa-arrow-left mr-1"></i>Back</a>
+</div>
+{% endblock %}

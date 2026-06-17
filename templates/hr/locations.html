@@ -1,0 +1,36 @@
+{% extends "base/base.html" %}
+{% block title %}Locations{% endblock %}
+{% block page_title %}Locations{% endblock %}
+{% block page_subtitle %}Manage office locations and geo-fences{% endblock %}
+{% block content %}
+<div class="space-y-5">
+    <div class="flex justify-end">
+        <a href="/admin/employees/location/add/" target="_blank" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg">
+            <i class="fas fa-plus mr-2"></i> Add Location
+        </a>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <table class="w-full">
+            <thead>
+                <tr class="bg-gray-50 border-b text-left text-xs font-semibold text-gray-500 uppercase">
+                    <th class="px-4 py-3">Name</th><th class="px-4 py-3">Code</th><th class="px-4 py-3">City</th><th class="px-4 py-3">State</th><th class="px-4 py-3">Geo Radius</th><th class="px-4 py-3">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {% for loc in locations %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ loc.name }}</td>
+                    <td class="px-4 py-3 text-sm font-mono text-blue-600">{{ loc.code }}</td>
+                    <td class="px-4 py-3 text-sm text-gray-600">{{ loc.city }}</td>
+                    <td class="px-4 py-3 text-sm text-gray-600">{{ loc.state }}</td>
+                    <td class="px-4 py-3 text-sm text-gray-600">{{ loc.geo_fence_radius }}m</td>
+                    <td class="px-4 py-3"><a href="/admin/employees/location/{{ loc.id }}/change/" target="_blank" class="text-blue-600 hover:underline text-xs">Edit</a></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="px-4 py-12 text-center text-sm text-gray-400">No locations found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

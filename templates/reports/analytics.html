@@ -1,21 +1,136 @@
 {% extends "base/base.html" %}
-{% block title %}Analytics{% endblock %}
-{% block breadcrumb %}<span class="current">Analytics</span>{% endblock %}
+{% block title %}Analytics Dashboard{% endblock %}
+{% block page_title %}Analytics &amp; Reports{% endblock %}
+{% block page_subtitle %}Insights across your organisation — last 30 days{% endblock %}
+
 {% block content %}
-<div class="ws-page-header">
-  <div>
-    <h1 class="ws-page-title">Analytics</h1>
-    <p class="ws-page-subtitle">WorkSphere HR</p>
-  </div>
+<div class="space-y-6">
+
+    <!-- Sub-nav -->
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <a href="/reports/" style="padding:7px 16px; border-radius:8px; font-size:13px; font-weight:600; background:#2563EB; color:#fff; text-decoration:none;">Analytics</a>
+        <a href="/reports/attendance/" style="padding:7px 16px; border-radius:8px; font-size:13px; font-weight:500; background:#fff; color:#374151; border:1px solid #E2E8F0; text-decoration:none;">Attendance</a>
+        <a href="/reports/leave/" style="padding:7px 16px; border-radius:8px; font-size:13px; font-weight:500; background:#fff; color:#374151; border:1px solid #E2E8F0; text-decoration:none;">Leave</a>
+        <a href="/reports/employees/" style="padding:7px 16px; border-radius:8px; font-size:13px; font-weight:500; background:#fff; color:#374151; border:1px solid #E2E8F0; text-decoration:none;">Employees</a>
+        {% if user.can_manage_payroll %}<a href="/reports/payroll/" style="padding:7px 16px; border-radius:8px; font-size:13px; font-weight:500; background:#fff; color:#374151; border:1px solid #E2E8F0; text-decoration:none;">Payroll</a>{% endif %}
+    </div>
+
+    <!-- KPIs -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <p class="text-gray-500 text-sm font-medium">Avg Attendance Rate</p>
+            <h3 class="text-3xl font-bold text-gray-900 mt-2">{{ attendance_rate }}%</h3>
+            <p class="text-xs text-green-600 mt-1"><i class="fas fa-arrow-up"></i> Last 30 days</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <p class="text-gray-500 text-sm font-medium">Leave Utilization</p>
+            <h3 class="text-3xl font-bold text-gray-900 mt-2">{{ leave_utilization }}%</h3>
+            <p class="text-xs text-orange-600 mt-1">Current period</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <p class="text-gray-500 text-sm font-medium">Overtime Hours</p>
+            <h3 class="text-3xl font-bold text-gray-900 mt-2">{{ overtime_hours }}</h3>
+            <p class="text-xs text-blue-600 mt-1">Last 30 days</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <p class="text-gray-500 text-sm font-medium">Active Employees</p>
+            <h3 class="text-3xl font-bold text-gray-900 mt-2">{{ total_employees }}</h3>
+            <p class="text-xs text-purple-600 mt-1">Organisation-wide</p>
+        </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <h3 class="text-base font-bold text-gray-900 mb-4">30-Day Attendance Trend</h3>
+            <canvas id="trendChart" height="100"></canvas>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <h3 class="text-base font-bold text-gray-900 mb-4">Headcount by Department</h3>
+            <canvas id="deptChart" height="100"></canvas>
+        </div>
+    </div>
+
+    <!-- Top Employees Table -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="px-6 py-4 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+            <h3 class="text-base font-bold text-gray-900">Employee Performance Snapshot</h3>
+            <div class="flex gap-2">
+                <a href="{{ export_csv_url }}" class="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition">
+                    <i class="fas fa-download mr-1"></i> CSV
+                </a>
+                <a href="{{ export_excel_url }}" class="inline-flex items-center px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-700 transition">
+                    <i class="fas fa-file-excel mr-1"></i> Excel
+                </a>
+                <a href="{{ export_pdf_url }}" class="inline-flex items-center px-3 py-1.5 bg-slate-700 text-white text-xs font-medium rounded-lg hover:bg-slate-800 transition">
+                    <i class="fas fa-file-pdf mr-1"></i> PDF
+                </a>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="bg-gray-50 border-b border-gray-200 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        <th class="px-4 py-3">Employee</th>
+                        <th class="px-4 py-3">Department</th>
+                        <th class="px-4 py-3">Attendance %</th>
+                        <th class="px-4 py-3">Leaves</th>
+                        <th class="px-4 py-3">OT Hours</th>
+                        <th class="px-4 py-3">Rating</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for emp in top_employees %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ emp.name }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-500">{{ emp.department }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-700">
+                            <div class="flex items-center gap-2">
+                                <div class="w-20 bg-gray-200 rounded-full h-1.5">
+                                    <div class="h-1.5 rounded-full {% if emp.attendance_pct >= 95 %}bg-green-500{% elif emp.attendance_pct >= 85 %}bg-yellow-500{% else %}bg-red-500{% endif %}" style="width:{{ emp.attendance_pct }}%"></div>
+                                </div>
+                                {{ emp.attendance_pct }}%
+                            </div>
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-700">{{ emp.leaves }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-700">{{ emp.overtime_hours }}h</td>
+                        <td class="px-4 py-3">
+                            <span class="inline-flex px-2 py-0.5 text-xs font-semibold rounded-full {% if emp.status == 'Excellent' %}bg-green-100 text-green-700{% elif emp.status == 'Good' %}bg-blue-100 text-blue-700{% else %}bg-yellow-100 text-yellow-700{% endif %}">
+                                {{ emp.status }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="px-4 py-8 text-center text-sm text-gray-400">No data available for this period.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
-<div class="ws-card">
-  <div class="ws-card-body" style="padding:40px;text-align:center">
-    <i class="fa-solid fa-gear fa-3x" style="color:var(--ws-primary);opacity:0.3;margin-bottom:16px"></i>
-    <h4 style="color:var(--ws-text-secondary)">Module Under Development</h4>
-    <p style="color:var(--ws-text-muted);font-size:13px">This section will be available soon.</p>
-    <a href="/" class="ws-btn ws-btn-primary" style="display:inline-flex;margin-top:16px">
-      <i class="fa-solid fa-house"></i> Back to Dashboard
-    </a>
-  </div>
-</div>
+
+<script>
+// Trend Chart
+new Chart(document.getElementById('trendChart'), {
+    type: 'line',
+    data: {
+        labels: {{ trend_labels|safe }},
+        datasets: [
+            { label: 'Present', data: {{ trend_present|safe }}, borderColor:'#10B981', backgroundColor:'rgba(16,185,129,.1)', fill:true, tension:.4 },
+            { label: 'Absent',  data: {{ trend_absent|safe }},  borderColor:'#EF4444', backgroundColor:'rgba(239,68,68,.1)',   fill:true, tension:.4 },
+        ]
+    },
+    options: { responsive:true, plugins:{ legend:{ position:'top' } }, scales:{ y:{ beginAtZero:true } } }
+});
+
+// Dept Chart
+new Chart(document.getElementById('deptChart'), {
+    type: 'bar',
+    data: {
+        labels: {{ department_labels|safe }},
+        datasets: [{ label: 'Headcount', data: {{ department_scores|safe }}, backgroundColor:'rgba(37,99,235,.75)', borderRadius:4 }]
+    },
+    options: { responsive:true, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true } } }
+});
+</script>
 {% endblock %}

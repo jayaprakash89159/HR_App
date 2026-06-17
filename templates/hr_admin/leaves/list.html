@@ -1,0 +1,46 @@
+{% extends "base/base.html" %}
+{% block title %}Leave Applications{% endblock %}
+{% block page_title %}All Leave Applications{% endblock %}
+{% block page_subtitle %}Review and manage all leave requests{% endblock %}
+{% block content %}
+<div class="space-y-5">
+  <div class="flex flex-wrap gap-3 items-center justify-between">
+    <form method="get" class="flex flex-wrap gap-2 items-center">
+      <select name="dept" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+        <option value="">All Depts</option>{% for d in departments %}<option value="{{ d.id }}" {% if dept_id == d.id|stringformat:"s" %}selected{% endif %}>{{ d.name }}</option>{% endfor %}
+      </select>
+      <select name="status" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+        <option value="">All Status</option>
+        <option value="pending" {% if status_f == 'pending' %}selected{% endif %}>Pending</option>
+        <option value="approved" {% if status_f == 'approved' %}selected{% endif %}>Approved</option>
+        <option value="rejected" {% if status_f == 'rejected' %}selected{% endif %}>Rejected</option>
+      </select>
+      <button type="submit" class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg">Filter</button>
+    </form>
+    <div class="flex gap-2">
+      <a href="{% url 'hr_admin:leave_csv_template' %}" class="px-3 py-2 bg-gray-100 text-gray-700 text-sm font-semibold rounded-lg"><i class="fas fa-file-csv mr-1"></i>Template</a>
+      <a href="{% url 'hr_admin:leave_bulk_upload' %}" class="px-3 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-lg"><i class="fas fa-upload mr-1"></i>Bulk Upload</a>
+    </div>
+  </div>
+  <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
+    <table class="w-full">
+      <thead><tr class="bg-gray-50 border-b text-left text-xs font-semibold text-gray-500 uppercase">
+        <th class="px-4 py-3">Employee</th><th class="px-4 py-3">Leave Type</th><th class="px-4 py-3">From</th><th class="px-4 py-3">To</th><th class="px-4 py-3">Days</th><th class="px-4 py-3">Status</th><th class="px-4 py-3">Reason</th>
+      </tr></thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for a in applications %}
+        <tr class="hover:bg-gray-50">
+          <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ a.employee.get_full_name }}</td>
+          <td class="px-4 py-3 text-sm text-gray-600">{{ a.leave_type.name }}</td>
+          <td class="px-4 py-3 text-sm text-gray-600">{{ a.from_date|date:"d M Y" }}</td>
+          <td class="px-4 py-3 text-sm text-gray-600">{{ a.to_date|date:"d M Y" }}</td>
+          <td class="px-4 py-3 text-sm font-bold text-gray-700">{{ a.total_days }}</td>
+          <td class="px-4 py-3"><span class="inline-flex px-2 py-0.5 text-xs font-semibold rounded-full {% if a.status == 'approved' %}bg-green-100 text-green-700{% elif a.status == 'pending' %}bg-yellow-100 text-yellow-700{% else %}bg-red-100 text-red-700{% endif %}">{{ a.get_status_display }}</span></td>
+          <td class="px-4 py-3 text-sm text-gray-500">{{ a.reason|truncatechars:40 }}</td>
+        </tr>
+        {% empty %}<tr><td colspan="7" class="px-4 py-12 text-center text-sm text-gray-400">No leave applications found.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -6,6 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from datetime import datetime, timedelta
 import calendar
+import json
 
 from apps.employees.models import Employee, Department
 from apps.attendance.models import Attendance
@@ -34,9 +35,9 @@ def home(request):
         employee = None
 
     # Route to role-specific dashboards
-    if user.role in ('super_admin', 'hr_admin', 'payroll_admin', 'auditor'):
+    if user.has_role('super_admin', 'hr_admin', 'hr_executive', 'payroll_admin', 'auditor', 'finance'):
         return hr_dashboard(request, employee, today)
-    elif user.role == 'manager':
+    elif user.is_manager:
         return manager_dashboard(request, employee, today)
     elif employee:
         return employee_dashboard_view(request, employee, today)
@@ -168,8 +169,8 @@ def employee_dashboard_view(request, employee, today):
 def hr_dashboard(request, employee, today):
     # HR-level stats
     total_employees = Employee.objects.filter(status='active').count()
-    today_present = Attendance.objects.filter(date=today, status__in=['present', 'late_mark', 'on_duty']).count()
-    today_absent = Attendance.objects.filter(date=today, status='absent').count()
+    today_present = Attendance.objects.filter(date=today, approval_status='approved', status__in=['present', 'late_mark', 'on_duty']).count()
+    today_absent = Attendance.objects.filter(date=today, approval_status='approved', status='absent').count()
     pending_leaves = LeaveApplication.objects.filter(status='pending').count()
 
     # Department breakdown
@@ -182,15 +183,30 @@ def hr_dashboard(request, employee, today):
             dept_labels.append(dept.name)
             dept_data.append(count)
 
-    # Monthly attendance trend (last 7 days)
+    # Monthly attendance trend (last 7 days) - single query
+    from django.db.models import Count, Q
+    period_start = today - timedelta(days=6)
+    from django.db.models.functions import TruncDate
+    daily_qs = (
+        Attendance.objects.filter(date__gte=period_start, date__lte=today, approval_status='approved')
+        .annotate(day=TruncDate('date'))
+        .values('day')
+        .annotate(
+            present=Count('id', filter=Q(status__in=['present', 'late_mark', 'on_duty'])),
+            absent=Count('id', filter=Q(status='absent')),
+        )
+    )
+    daily_map = {str(r['day']): r for r in daily_qs}
     trend_labels = []
     trend_present = []
     trend_absent = []
     for i in range(6, -1, -1):
         day = today - timedelta(days=i)
+        key = str(day)
         trend_labels.append(day.strftime('%d %b'))
-        trend_present.append(Attendance.objects.filter(date=day, status__in=['present', 'late_mark']).count())
-        trend_absent.append(Attendance.objects.filter(date=day, status='absent').count())
+        rec = daily_map.get(key, {})
+        trend_present.append(rec.get('present', 0))
+        trend_absent.append(rec.get('absent', 0))
 
     context = {
         'employee': employee,
@@ -200,11 +216,11 @@ def hr_dashboard(request, employee, today):
         'today_present': today_present,
         'today_absent': today_absent,
         'pending_leaves': pending_leaves,
-        'dept_labels': dept_labels,
-        'dept_data': dept_data,
-        'trend_labels': trend_labels,
-        'trend_present': trend_present,
-        'trend_absent': trend_absent,
+        'dept_labels': json.dumps(dept_labels),
+        'dept_data': json.dumps(dept_data),
+        'trend_labels': json.dumps(trend_labels),
+        'trend_present': json.dumps(trend_present),
+        'trend_absent': json.dumps(trend_absent),
         'attendance_rate': round((today_present / total_employees * 100) if total_employees else 0, 1),
     }
     return render(request, 'dashboard/hr_dashboard.html', context)
@@ -215,9 +231,9 @@ def manager_dashboard(request, employee, today):
     team = Employee.objects.filter(reporting_manager=employee, status='active')
     team_ids = team.values_list('id', flat=True)
 
-    team_present = Attendance.objects.filter(date=today, employee_id__in=team_ids,
+    team_present = Attendance.objects.filter(date=today, employee_id__in=team_ids, approval_status='approved',
                                               status__in=['present', 'late_mark', 'on_duty']).count()
-    team_absent = Attendance.objects.filter(date=today, employee_id__in=team_ids,
+    team_absent = Attendance.objects.filter(date=today, employee_id__in=team_ids, approval_status='approved',
                                              status='absent').count()
     pending_leaves = LeaveApplication.objects.filter(
         employee__in=team, status='pending'

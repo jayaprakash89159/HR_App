@@ -1,21 +1,17 @@
 {% extends "base/base.html" %}
-{% block title %}No Profile{% endblock %}
-{% block breadcrumb %}<span class="current">No Profile</span>{% endblock %}
+{% block title %}Setup Required{% endblock %}
+{% block page_title %}Account Setup Required{% endblock %}
+{% block page_subtitle %}Your employee profile is not configured yet{% endblock %}
 {% block content %}
-<div class="ws-page-header">
-  <div>
-    <h1 class="ws-page-title">No Profile</h1>
-    <p class="ws-page-subtitle">WorkSphere HR</p>
-  </div>
-</div>
-<div class="ws-card">
-  <div class="ws-card-body" style="padding:40px;text-align:center">
-    <i class="fa-solid fa-gear fa-3x" style="color:var(--ws-primary);opacity:0.3;margin-bottom:16px"></i>
-    <h4 style="color:var(--ws-text-secondary)">Module Under Development</h4>
-    <p style="color:var(--ws-text-muted);font-size:13px">This section will be available soon.</p>
-    <a href="/" class="ws-btn ws-btn-primary" style="display:inline-flex;margin-top:16px">
-      <i class="fa-solid fa-house"></i> Back to Dashboard
-    </a>
-  </div>
+<div class="max-w-lg mx-auto text-center py-20">
+    <div class="w-24 h-24 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-6">
+        <i class="fas fa-user-gear text-4xl text-yellow-600"></i>
+    </div>
+    <h2 class="text-2xl font-bold text-gray-900 mb-3">Employee Profile Not Found</h2>
+    <p class="text-gray-500 mb-6">Your account exists but an employee profile hasn't been set up yet. Please contact your HR administrator to configure your profile.</p>
+    <div class="flex gap-3 justify-center">
+        <a href="/auth/logout/" class="px-6 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition text-sm">Sign Out</a>
+        {% if user.is_staff %}<a href="/admin/" class="px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition text-sm">Admin Panel</a>{% endif %}
+    </div>
 </div>
 {% endblock %}

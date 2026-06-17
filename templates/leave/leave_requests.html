@@ -1,0 +1,158 @@
+{% extends "base/base.html" %}
+{% block title %}Leave Approvals{% endblock %}
+{% block page_title %}Leave Approvals{% endblock %}
+{% block page_subtitle %}Review and approve pending leave requests{% endblock %}
+
+{% block content %}
+<div class="space-y-5">
+
+    <!-- Summary -->
+    <div id="summaryCards" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-white rounded-xl p-4 border shadow-sm">
+            <p class="text-xs text-gray-500">Pending</p>
+            <h3 id="cntPending" class="text-2xl font-bold text-yellow-500 mt-1">—</h3>
+        </div>
+        <div class="bg-white rounded-xl p-4 border shadow-sm">
+            <p class="text-xs text-gray-500">Approved This Month</p>
+            <h3 id="cntApproved" class="text-2xl font-bold text-green-600 mt-1">—</h3>
+        </div>
+    </div>
+
+    <!-- Filter -->
+    <div class="flex gap-3 flex-wrap">
+        <button onclick="filterRequests('pending')" id="btn-pending" class="px-3 py-1.5 text-sm font-semibold bg-yellow-100 text-yellow-700 rounded-lg">Pending</button>
+        <button onclick="filterRequests('approved')" id="btn-approved" class="px-3 py-1.5 text-sm font-semibold bg-gray-100 text-gray-700 rounded-lg">Approved</button>
+        <button onclick="filterRequests('rejected')" id="btn-rejected" class="px-3 py-1.5 text-sm font-semibold bg-gray-100 text-gray-700 rounded-lg">Rejected</button>
+        <button onclick="filterRequests('')" id="btn-all" class="px-3 py-1.5 text-sm font-semibold bg-gray-100 text-gray-700 rounded-lg">All</button>
+    </div>
+
+    <!-- Table -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="bg-gray-50 border-b text-left text-xs font-semibold text-gray-500 uppercase">
+                        <th class="px-4 py-3">Employee</th>
+                        <th class="px-4 py-3">Leave Type</th>
+                        <th class="px-4 py-3">From</th>
+                        <th class="px-4 py-3">To</th>
+                        <th class="px-4 py-3">Days</th>
+                        <th class="px-4 py-3">Reason</th>
+                        <th class="px-4 py-3">Status</th>
+                        <th class="px-4 py-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="requestsBody" class="divide-y divide-gray-100">
+                    <tr><td colspan="8" class="px-4 py-10 text-center text-sm text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>Loading…</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Approval Modal -->
+<div id="approvalModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:100; align-items:center; justify-content:center;">
+    <div class="bg-white rounded-2xl shadow-xl p-6 max-w-md w-full mx-4">
+        <h3 class="font-bold text-gray-900 mb-1" id="modalTitle">Review Leave Request</h3>
+        <p class="text-sm text-gray-500 mb-4" id="modalSubtitle"></p>
+        <textarea id="remarksInput" rows="3" placeholder="Remarks (optional)"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mb-4 resize-none focus:outline-none focus:border-blue-500"></textarea>
+        <div class="flex gap-3">
+            <button onclick="submitDecision('approved')" class="flex-1 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600 text-sm">Approve</button>
+            <button onclick="submitDecision('rejected')" class="flex-1 py-2 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600 text-sm">Reject</button>
+            <button onclick="closeModal()" class="px-4 py-2 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 text-sm">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const csrfToken = document.cookie.split(';').map(c=>c.trim()).find(c=>c.startsWith('csrftoken='))?.split('=')[1]||'';
+let allRequests = [];
+let currentAppId = null;
+let currentFilter = 'pending';
+
+async function loadRequests() {
+    try {
+        const r = await fetch('/api/v1/leave/pending-approvals/', {credentials:'include'});
+        if (!r.ok) throw new Error(r.status);
+        allRequests = await r.json();
+        renderRequests(allRequests.filter(a => currentFilter ? a.status === currentFilter : true));
+
+        const pending = allRequests.filter(a => a.status === 'pending').length;
+        const approved = allRequests.filter(a => a.status === 'approved').length;
+        document.getElementById('cntPending').textContent = pending;
+        document.getElementById('cntApproved').textContent = approved;
+    } catch(e) {
+        document.getElementById('requestsBody').innerHTML = '<tr><td colspan="8" class="px-4 py-8 text-center text-sm text-gray-400">Unable to load requests.</td></tr>';
+    }
+}
+
+function filterRequests(status) {
+    currentFilter = status;
+    renderRequests(allRequests.filter(a => status ? a.status === status : true));
+}
+
+function renderRequests(items) {
+    const tbody = document.getElementById('requestsBody');
+    if (!items.length) {
+        tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-10 text-center text-sm text-gray-400">No requests found.</td></tr>';
+        return;
+    }
+    const sc = {approved:'bg-green-100 text-green-700', pending:'bg-yellow-100 text-yellow-700', rejected:'bg-red-100 text-red-700', cancelled:'bg-gray-100 text-gray-500'};
+    tbody.innerHTML = items.map(a => `
+        <tr class="hover:bg-gray-50">
+            <td class="px-4 py-3">
+                <div class="text-sm font-medium text-gray-900">${a.employee_name || '—'}</div>
+                <div class="text-xs text-gray-400">${a.department || ''}</div>
+            </td>
+            <td class="px-4 py-3 text-sm text-gray-700">${a.leave_type.name}</td>
+            <td class="px-4 py-3 text-sm text-gray-600">${new Date(a.from_date).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</td>
+            <td class="px-4 py-3 text-sm text-gray-600">${new Date(a.to_date).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</td>
+            <td class="px-4 py-3 text-sm font-semibold text-gray-700">${a.total_days}</td>
+            <td class="px-4 py-3 text-sm text-gray-500 max-w-xs">${(a.reason||'').substring(0,60)}${(a.reason||'').length>60?'…':''}</td>
+            <td class="px-4 py-3"><span class="inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${sc[a.status]||'bg-gray-100 text-gray-600'}">${a.status_display}</span></td>
+            <td class="px-4 py-3">
+                ${a.status === 'pending' ? `<button onclick="openModal('${a.id}', '${(a.employee_name||'').replace(/'/g,"\\'")}', '${a.leave_type.name}')"
+                    class="px-3 py-1 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700">Review</button>` : '—'}
+            </td>
+        </tr>`).join('');
+}
+
+function openModal(id, empName, leaveType) {
+    currentAppId = id;
+    document.getElementById('modalTitle').textContent = `Review: ${empName}`;
+    document.getElementById('modalSubtitle').textContent = `Leave type: ${leaveType}`;
+    document.getElementById('remarksInput').value = '';
+    document.getElementById('approvalModal').style.display = 'flex';
+}
+function closeModal() {
+    document.getElementById('approvalModal').style.display = 'none';
+    currentAppId = null;
+}
+
+async function submitDecision(decision) {
+    if (!currentAppId) return;
+    const remarks = document.getElementById('remarksInput').value;
+    try {
+        const r = await fetch(`/api/v1/leave/applications/${currentAppId}/`, {
+            method: 'PATCH',
+            headers: {'X-CSRFToken': csrfToken, 'Content-Type': 'application/json'},
+            credentials: 'include',
+            body: JSON.stringify({status: decision, remarks})
+        });
+        if (r.ok) {
+            showToast(`Leave ${decision} successfully`, 'success');
+            closeModal();
+            await loadRequests();
+        } else {
+            const d = await r.json();
+            showToast(d.error || 'Failed', 'error');
+        }
+    } catch(e) {
+        showToast('Network error', 'error');
+    }
+}
+
+loadRequests();
+</script>
+{% endblock %}

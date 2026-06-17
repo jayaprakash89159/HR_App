@@ -22,6 +22,8 @@ urlpatterns = [
     path('payroll/',    include('apps.payroll.urls')),
     path('shifts/',     include('apps.shifts.urls')),
     path('reports/',    include('apps.reports.urls')),
+    path('hr/',         include('apps.dashboard.hr_urls')),
+    path('manage/',     include('apps.hr_admin.urls')),
 
     # REST API v1
     path('api/v1/', include([

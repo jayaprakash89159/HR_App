@@ -1,21 +1,360 @@
 {% extends "base/base.html" %}
-{% block title %}Clock{% endblock %}
-{% block breadcrumb %}<span class="current">Clock</span>{% endblock %}
+{% block title %}Clock In / Out{% endblock %}
+{% block page_title %}Clock In / Out{% endblock %}
+{% block page_subtitle %}Biometric attendance with camera capture and GPS verification{% endblock %}
+
 {% block content %}
-<div class="ws-page-header">
-  <div>
-    <h1 class="ws-page-title">Clock</h1>
-    <p class="ws-page-subtitle">WorkSphere HR</p>
+<div class="max-w-2xl mx-auto space-y-5">
+
+  <!-- Live Clock -->
+  <div class="bg-gradient-to-br from-blue-700 to-indigo-800 rounded-2xl shadow-xl p-6 text-white text-center">
+    <p class="text-blue-200 text-sm font-medium mb-1">Current Time</p>
+    <h2 id="clockDisplay" class="text-5xl font-bold font-mono tracking-widest">--:--:--</h2>
+    <p id="dateDisplay" class="text-blue-200 text-sm mt-2"></p>
+    <div id="locationStatus" class="mt-3 inline-flex items-center gap-2 px-3 py-1 bg-white bg-opacity-15 rounded-full text-xs font-semibold">
+      <i class="fas fa-map-marker-alt"></i><span>Checking location…</span>
+    </div>
+  </div>
+
+  <!-- Camera + Action -->
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+    <div class="p-5 border-b border-gray-100">
+      <h3 class="font-bold text-gray-900">Face Capture</h3>
+      <p class="text-xs text-gray-400 mt-0.5">Your photo will be captured automatically when you clock in/out</p>
+    </div>
+
+    <div class="p-5 space-y-4">
+      <!-- Camera view -->
+      <div class="relative bg-gray-900 rounded-xl overflow-hidden" style="aspect-ratio:4/3;">
+        <video id="cameraFeed" autoplay playsinline muted class="w-full h-full object-cover"
+               style="transform:scaleX(-1);"></video>
+        <canvas id="snapCanvas" class="hidden w-full h-full object-cover absolute inset-0"></canvas>
+        <div id="cameraOverlay" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-900 bg-opacity-90">
+          <i class="fas fa-camera text-5xl text-gray-500 mb-3"></i>
+          <p class="text-gray-400 text-sm font-medium">Camera not started</p>
+          <button onclick="startCamera()" class="mt-3 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700">
+            <i class="fas fa-camera mr-1"></i>Enable Camera
+          </button>
+        </div>
+        <!-- Capture animation overlay -->
+        <div id="flashOverlay" class="absolute inset-0 bg-white opacity-0 pointer-events-none transition-opacity duration-150"></div>
+        <!-- Captured photo preview -->
+        <div id="capturedBadge" class="hidden absolute top-3 right-3 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+          <i class="fas fa-check mr-1"></i>Captured
+        </div>
+      </div>
+
+      <!-- Status card -->
+      <div id="statusCard" class="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
+        <div id="statusDot" class="w-4 h-4 bg-gray-300 rounded-full flex-shrink-0"></div>
+        <div class="flex-1 min-w-0">
+          <p id="statusLabel" class="font-semibold text-gray-700 text-sm">Checking status…</p>
+          <p id="statusInfo" class="text-xs text-gray-400 mt-0.5"></p>
+        </div>
+        <div id="workingHoursChip" class="hidden px-3 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded-full"></div>
+      </div>
+
+      <!-- Approval status -->
+      <div id="approvalBanner" class="hidden flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium"></div>
+
+      <!-- GPS info -->
+      <div id="gpsInfo" class="text-xs text-gray-400 flex items-center gap-2">
+        <i class="fas fa-satellite-dish text-gray-300"></i>
+        <span id="gpsText">Acquiring GPS coordinates…</span>
+      </div>
+
+      <!-- Main action button -->
+      <button id="actionBtn" onclick="handleClockAction()" disabled
+              class="w-full py-4 bg-gray-200 text-gray-500 font-bold text-base rounded-xl transition-all duration-200 cursor-not-allowed">
+        <i class="fas fa-spinner fa-spin mr-2"></i>Initializing…
+      </button>
+
+      <!-- Captured image hidden input (base64) -->
+      <input type="hidden" id="capturedPhoto" value="">
+      <input type="hidden" id="capturedLat" value="">
+      <input type="hidden" id="capturedLng" value="">
+    </div>
+  </div>
+
+  <!-- Today summary -->
+  <div id="todaySummary" class="hidden bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+    <h3 class="font-bold text-gray-900 mb-3 text-sm">Today's Record</h3>
+    <div class="grid grid-cols-2 gap-3">
+      <div class="bg-green-50 rounded-lg p-3 text-center">
+        <p class="text-xs text-gray-400 mb-1">Check In</p>
+        <p id="sumIn" class="font-bold text-green-700 text-sm">—</p>
+      </div>
+      <div class="bg-blue-50 rounded-lg p-3 text-center">
+        <p class="text-xs text-gray-400 mb-1">Check Out</p>
+        <p id="sumOut" class="font-bold text-blue-700 text-sm">—</p>
+      </div>
+      <div class="bg-purple-50 rounded-lg p-3 text-center">
+        <p class="text-xs text-gray-400 mb-1">Hours Worked</p>
+        <p id="sumHours" class="font-bold text-purple-700 text-sm">—</p>
+      </div>
+      <div class="bg-orange-50 rounded-lg p-3 text-center">
+        <p class="text-xs text-gray-400 mb-1">Status</p>
+        <p id="sumStatus" class="font-bold text-orange-700 text-sm">—</p>
+      </div>
+    </div>
   </div>
 </div>
-<div class="ws-card">
-  <div class="ws-card-body" style="padding:40px;text-align:center">
-    <i class="fa-solid fa-gear fa-3x" style="color:var(--ws-primary);opacity:0.3;margin-bottom:16px"></i>
-    <h4 style="color:var(--ws-text-secondary)">Module Under Development</h4>
-    <p style="color:var(--ws-text-muted);font-size:13px">This section will be available soon.</p>
-    <a href="/" class="ws-btn ws-btn-primary" style="display:inline-flex;margin-top:16px">
-      <i class="fa-solid fa-house"></i> Back to Dashboard
-    </a>
-  </div>
-</div>
+
+<script>
+const csrf = document.cookie.split(';').map(c=>c.trim()).find(c=>c.startsWith('csrftoken='))?.split('=')[1]||'';
+let stream = null;
+let isClockedIn = false;
+let gpsCoords = null;
+let cameraReady = false;
+let dayComplete = false;
+
+// ── Live clock ──────────────────────────────────────
+function tick() {
+  const n = new Date();
+  document.getElementById('clockDisplay').textContent = n.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+  document.getElementById('dateDisplay').textContent = n.toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+}
+setInterval(tick, 1000); tick();
+
+// ── GPS ──────────────────────────────────────
+function initGPS() {
+  if (!navigator.geolocation) {
+    setGPSStatus('GPS not supported','red');
+    return;
+  }
+  document.getElementById('gpsText').textContent = 'Requesting location access…';
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      gpsCoords = {lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy};
+      const accM = Math.round(pos.coords.accuracy);
+      document.getElementById('gpsText').textContent = `GPS: ${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)} (±${accM}m)`;
+      document.getElementById('gpsText').className = 'text-xs text-green-600 flex items-center gap-2';
+      document.getElementById('capturedLat').value = pos.coords.latitude;
+      document.getElementById('capturedLng').value = pos.coords.longitude;
+      setLocationStatus('Location verified','green');
+    },
+    err => {
+      console.warn('GPS error:', err.message);
+      document.getElementById('gpsText').textContent = `GPS unavailable (${err.message}) — proceeding without location`;
+      setLocationStatus('No GPS','orange');
+    },
+    {enableHighAccuracy: true, timeout: 12000, maximumAge: 0}
+  );
+}
+
+function setLocationStatus(msg, color) {
+  const colors = {green:'bg-green-500',orange:'bg-orange-400 text-gray-900',red:'bg-red-500'};
+  const el = document.getElementById('locationStatus');
+  el.innerHTML = `<i class="fas fa-map-marker-alt"></i><span>${msg}</span>`;
+  el.className = `mt-3 inline-flex items-center gap-2 px-3 py-1 ${colors[color]||'bg-gray-500'} bg-opacity-90 rounded-full text-xs font-semibold`;
+}
+function setGPSStatus(msg, color) { document.getElementById('gpsText').textContent = msg; }
+
+// ── Camera ──────────────────────────────────────
+async function startCamera() {
+  document.getElementById('cameraOverlay').innerHTML = '<i class="fas fa-spinner fa-spin text-4xl text-blue-400"></i><p class="text-gray-300 text-sm mt-2">Starting camera…</p>';
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: {facingMode:'user', width:{ideal:640}, height:{ideal:480}},
+      audio: false
+    });
+    const video = document.getElementById('cameraFeed');
+    video.srcObject = stream;
+    video.onloadedmetadata = () => {
+      cameraReady = true;
+      document.getElementById('cameraOverlay').classList.add('hidden');
+      updateActionButton();
+    };
+  } catch(e) {
+    console.error('Camera error:', e);
+    document.getElementById('cameraOverlay').innerHTML = `
+      <i class="fas fa-camera-slash text-4xl text-red-400 mb-2"></i>
+      <p class="text-red-300 text-sm font-medium">Camera access denied</p>
+      <p class="text-gray-400 text-xs mt-1">Please allow camera in browser settings</p>
+      <button onclick="proceedWithoutCamera()" class="mt-3 px-4 py-1.5 bg-yellow-500 text-white text-xs font-semibold rounded-lg">Continue without camera</button>`;
+  }
+}
+
+function proceedWithoutCamera() {
+  cameraReady = true;
+  document.getElementById('cameraOverlay').innerHTML = '<div class="text-center"><i class="fas fa-user-circle text-6xl text-gray-500 mb-2"></i><p class="text-gray-300 text-sm">No camera</p></div>';
+  updateActionButton();
+}
+
+function capturePhoto() {
+  if (!cameraReady || !stream) return null;
+  const video = document.getElementById('cameraFeed');
+  const canvas = document.getElementById('snapCanvas');
+  canvas.width = video.videoWidth || 640;
+  canvas.height = video.videoHeight || 480;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(-1, 1);
+  ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
+  ctx.scale(-1, 1);
+  return canvas.toDataURL('image/jpeg', 0.7);
+}
+
+function flashCapture() {
+  const flash = document.getElementById('flashOverlay');
+  flash.style.opacity = '0.8';
+  setTimeout(() => flash.style.opacity = '0', 150);
+  document.getElementById('capturedBadge').classList.remove('hidden');
+  setTimeout(() => document.getElementById('capturedBadge').classList.add('hidden'), 3000);
+}
+
+// ── Status from API ──────────────────────────────────────
+async function loadTodayStatus() {
+  try {
+    const r = await fetch('/api/v1/attendance/today/', {credentials:'include'});
+    if (r.status === 404) { setStatus('not_started'); return; }
+    if (!r.ok) throw new Error(r.status);
+    const d = await r.json();
+
+    // Show today summary
+    const sc = document.getElementById('todaySummary');
+    sc.classList.remove('hidden');
+    if (d.clock_in) document.getElementById('sumIn').textContent = new Date(d.clock_in).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
+    if (d.clock_out) document.getElementById('sumOut').textContent = new Date(d.clock_out).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
+    const mins = d.effective_working_minutes || 0;
+    document.getElementById('sumHours').textContent = `${Math.floor(mins/60)}h ${mins%60}m`;
+    document.getElementById('sumStatus').textContent = d.status || '—';
+
+    if (d.clock_in && d.clock_out) {
+      dayComplete = true;
+      setStatus('complete', d);
+    } else if (d.clock_in) {
+      isClockedIn = true;
+      setStatus('clocked_in', d);
+    } else {
+      setStatus('not_started');
+    }
+  } catch(e) {
+    console.error('Status error:', e);
+    setStatus('not_started');
+  }
+}
+
+function setStatus(state, data) {
+  const dot = document.getElementById('statusDot');
+  const lbl = document.getElementById('statusLabel');
+  const info = document.getElementById('statusInfo');
+  const chip = document.getElementById('workingHoursChip');
+
+  if (state === 'not_started') {
+    dot.className = 'w-4 h-4 bg-yellow-400 rounded-full flex-shrink-0';
+    lbl.textContent = 'Not clocked in today';
+    info.textContent = 'Enable camera and click Clock In';
+  } else if (state === 'clocked_in') {
+    dot.className = 'w-4 h-4 bg-green-400 rounded-full flex-shrink-0 animate-pulse';
+    lbl.textContent = data.status === 'late_mark' ? 'Clocked in — Late arrival' : 'Clocked in — On time';
+    const ci = new Date(data.clock_in);
+    info.textContent = `Since ${ci.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true})}`;
+    const mins = data.effective_working_minutes || 0;
+    chip.textContent = `${Math.floor(mins/60)}h ${mins%60}m`;
+    chip.classList.remove('hidden');
+  } else if (state === 'complete') {
+    dot.className = 'w-4 h-4 bg-blue-400 rounded-full flex-shrink-0';
+    lbl.textContent = 'Day complete';
+    const mins = data.effective_working_minutes || 0;
+    info.textContent = `Total: ${Math.floor(mins/60)}h ${mins%60}m`;
+    chip.classList.add('hidden');
+  }
+  renderApprovalBanner(data ? data.approval_status : null);
+  updateActionButton();
+}
+
+function renderApprovalBanner(status) {
+  const el = document.getElementById('approvalBanner');
+  if (!status) { el.classList.add('hidden'); return; }
+  el.classList.remove('hidden');
+  if (status === 'pending') {
+    el.className = 'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-yellow-50 text-yellow-700 border border-yellow-200';
+    el.innerHTML = '<i class="fas fa-hourglass-half"></i> Pending approval — your manager/HR will review this punch before it appears in attendance reports.';
+  } else if (status === 'approved') {
+    el.className = 'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-green-50 text-green-700 border border-green-200';
+    el.innerHTML = '<i class="fas fa-check-circle"></i> Approved — this attendance is reflected in reports.';
+  } else if (status === 'rejected') {
+    el.className = 'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-red-50 text-red-700 border border-red-200';
+    el.innerHTML = '<i class="fas fa-circle-exclamation"></i> Rejected by your approver — please contact HR if this is unexpected.';
+  }
+}
+
+function updateActionButton() {
+  const btn = document.getElementById('actionBtn');
+  if (dayComplete) {
+    btn.disabled = true;
+    btn.className = 'w-full py-4 bg-gray-200 text-gray-500 font-bold text-base rounded-xl cursor-not-allowed';
+    btn.innerHTML = '<i class="fas fa-check-circle mr-2"></i>Day Complete';
+    return;
+  }
+  if (!cameraReady) {
+    btn.disabled = true;
+    btn.className = 'w-full py-4 bg-yellow-100 text-yellow-600 font-bold text-base rounded-xl cursor-not-allowed';
+    btn.innerHTML = '<i class="fas fa-camera mr-2"></i>Enable Camera First';
+    return;
+  }
+  btn.disabled = false;
+  if (isClockedIn) {
+    btn.className = 'w-full py-4 bg-red-500 hover:bg-red-600 text-white font-bold text-base rounded-xl transition-all duration-200 shadow-lg shadow-red-200';
+    btn.innerHTML = '<i class="fas fa-sign-out-alt mr-2"></i>Clock Out';
+  } else {
+    btn.className = 'w-full py-4 bg-green-500 hover:bg-green-600 text-white font-bold text-base rounded-xl transition-all duration-200 shadow-lg shadow-green-200';
+    btn.innerHTML = '<i class="fas fa-sign-in-alt mr-2"></i>Clock In';
+  }
+}
+
+// ── Main action ──────────────────────────────────────
+async function handleClockAction() {
+  const btn = document.getElementById('actionBtn');
+  btn.disabled = true;
+  const origHtml = btn.innerHTML;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing…';
+
+  // Capture photo
+  let photoData = null;
+  if (cameraReady && stream) {
+    photoData = capturePhoto();
+    if (photoData) {
+      flashCapture();
+      document.getElementById('capturedPhoto').value = photoData;
+    }
+  }
+
+  const endpoint = isClockedIn ? '/api/v1/attendance/clock-out/' : '/api/v1/attendance/clock-in/';
+  const payload = {
+    source: 'web_camera',
+    latitude: document.getElementById('capturedLat').value || null,
+    longitude: document.getElementById('capturedLng').value || null,
+    photo: photoData ? photoData.split(',')[1] : null,  // base64 only
+  };
+
+  try {
+    const resp = await fetch(endpoint, {
+      method: 'POST',
+      headers: {'X-CSRFToken': csrf, 'Content-Type': 'application/json'},
+      credentials: 'include',
+      body: JSON.stringify(payload)
+    });
+    const data = await resp.json();
+    if (resp.ok) {
+      const msg = isClockedIn ? '✓ Clocked out — pending approval' : '✓ Clocked in — pending approval';
+      showToast(msg, 'success');
+      await loadTodayStatus();
+    } else {
+      showToast(data.error || data.detail || 'Action failed', 'error');
+      btn.disabled = false;
+      btn.innerHTML = origHtml;
+    }
+  } catch(e) {
+    showToast('Network error — please try again', 'error');
+    btn.disabled = false;
+    btn.innerHTML = origHtml;
+  }
+}
+
+// ── Init ──────────────────────────────────────
+initGPS();
+startCamera();
+loadTodayStatus();
+</script>
 {% endblock %}

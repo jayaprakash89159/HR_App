@@ -1,8 +1,8 @@
 """WorkSphere HR - Shifts Web URLs"""
 from django.urls import path
 from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
+from apps.authentication.utils import hr_portal_only
 app_name = 'shifts'
 urlpatterns = [
-    path('', login_required(lambda r: render(r, 'shifts/list.html')), name='list'),
+    path('', hr_portal_only(lambda r: render(r, 'shifts/list.html')), name='list'),
 ]

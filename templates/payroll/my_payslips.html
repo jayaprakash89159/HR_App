@@ -1,21 +1,130 @@
 {% extends "base/base.html" %}
 {% block title %}My Payslips{% endblock %}
-{% block breadcrumb %}<span class="current">My Payslips</span>{% endblock %}
+{% block page_title %}My Payslips{% endblock %}
+{% block page_subtitle %}View and download your monthly payslips{% endblock %}
+
 {% block content %}
-<div class="ws-page-header">
-  <div>
-    <h1 class="ws-page-title">My Payslips</h1>
-    <p class="ws-page-subtitle">WorkSphere HR</p>
-  </div>
+<div class="space-y-6">
+
+    <!-- Year filter -->
+    <div class="flex items-center gap-3">
+        <label class="text-sm font-medium text-gray-600">Year:</label>
+        <select id="yearFilter" onchange="loadPayslips()" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+            {% for y in years %}<option value="{{ y }}">{{ y }}</option>{% endfor %}
+        </select>
+    </div>
+
+    <!-- Payslip Cards -->
+    <div id="payslipGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="col-span-full py-10 text-center text-sm text-gray-400">
+            <i class="fas fa-spinner fa-spin mr-2"></i>Loading payslips…
+        </div>
+    </div>
 </div>
-<div class="ws-card">
-  <div class="ws-card-body" style="padding:40px;text-align:center">
-    <i class="fa-solid fa-gear fa-3x" style="color:var(--ws-primary);opacity:0.3;margin-bottom:16px"></i>
-    <h4 style="color:var(--ws-text-secondary)">Module Under Development</h4>
-    <p style="color:var(--ws-text-muted);font-size:13px">This section will be available soon.</p>
-    <a href="/" class="ws-btn ws-btn-primary" style="display:inline-flex;margin-top:16px">
-      <i class="fa-solid fa-house"></i> Back to Dashboard
-    </a>
-  </div>
+
+<!-- Payslip Detail Modal -->
+<div id="payslipModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:100; align-items:center; justify-content:center; padding:16px;">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-screen overflow-y-auto">
+        <div class="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-t-2xl p-6 text-white">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h2 class="text-xl font-bold">Payslip</h2>
+                    <p id="modalPeriod" class="text-blue-200 text-sm mt-1"></p>
+                </div>
+                <button onclick="document.getElementById('payslipModal').style.display='none'" class="text-white hover:text-blue-200">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+        </div>
+        <div id="modalContent" class="p-6">
+            <div class="text-center py-8 text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>Loading…</div>
+        </div>
+    </div>
 </div>
+
+<script>
+async function loadPayslips() {
+    const grid = document.getElementById('payslipGrid');
+    const year = document.getElementById('yearFilter')?.value || '';
+    grid.innerHTML = '<div class="col-span-full py-10 text-center text-sm text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>Loading…</div>';
+    try {
+        const r = await fetch(`/api/v1/payroll/payslips/?year=${year}`, {credentials:'include'});
+        if (!r.ok) throw new Error(r.status);
+        const payslips = await r.json();
+        if (!payslips.length) {
+            grid.innerHTML = '<div class="col-span-full py-10 text-center text-sm text-gray-400">No payslips found for this period.</div>';
+            return;
+        }
+        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        const statusColors = {paid:'bg-green-100 text-green-700', approved:'bg-blue-100 text-blue-700', generated:'bg-yellow-100 text-yellow-700', draft:'bg-gray-100 text-gray-600'};
+        grid.innerHTML = payslips.map(ps => `
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition cursor-pointer" onclick="viewPayslip('${ps.id}')">
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <h3 class="font-bold text-gray-900 text-lg">${months[ps.period.month-1]} ${ps.period.year}</h3>
+                        <p class="text-xs font-mono text-gray-400 mt-0.5">${ps.payslip_number}</p>
+                    </div>
+                    <span class="inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${statusColors[ps.status]||'bg-gray-100 text-gray-600'}">${ps.status}</span>
+                </div>
+                <div class="space-y-2">
+                    <div class="flex justify-between text-sm"><span class="text-gray-500">Gross Earnings</span><span class="font-semibold text-gray-800">₹${ps.gross_earnings.toLocaleString('en-IN')}</span></div>
+                    <div class="flex justify-between text-sm"><span class="text-gray-500">Deductions</span><span class="font-semibold text-red-600">- ₹${ps.total_deductions.toLocaleString('en-IN')}</span></div>
+                    <div class="h-px bg-gray-100"></div>
+                    <div class="flex justify-between text-sm"><span class="font-semibold text-gray-700">Net Pay</span><span class="font-bold text-green-700 text-base">₹${ps.net_salary.toLocaleString('en-IN')}</span></div>
+                </div>
+                <div class="mt-4 flex items-center justify-between text-xs text-gray-400">
+                    <span><i class="fas fa-calendar-check mr-1"></i>${ps.days_present} days present</span>
+                    ${ps.has_pdf ? '<span class="text-blue-500"><i class="fas fa-file-pdf mr-1"></i>PDF available</span>' : ''}
+                </div>
+            </div>`).join('');
+    } catch(e) {
+        grid.innerHTML = '<div class="col-span-full py-8 text-center text-sm text-red-400">Failed to load payslips. Please refresh.</div>';
+    }
+}
+
+async function viewPayslip(id) {
+    document.getElementById('payslipModal').style.display = 'flex';
+    document.getElementById('modalContent').innerHTML = '<div class="text-center py-8 text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>Loading…</div>';
+    try {
+        const r = await fetch(`/api/v1/payroll/payslips/${id}/`, {credentials:'include'});
+        const ps = await r.json();
+        const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        document.getElementById('modalPeriod').textContent = `${months[ps.period.month-1]} ${ps.period.year}`;
+        document.getElementById('modalContent').innerHTML = `
+            <div class="space-y-5">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-green-50 rounded-xl p-4 text-center">
+                        <p class="text-xs text-gray-500 mb-1">Gross Earnings</p>
+                        <p class="text-2xl font-bold text-green-700">₹${ps.gross_earnings.toLocaleString('en-IN')}</p>
+                    </div>
+                    <div class="bg-red-50 rounded-xl p-4 text-center">
+                        <p class="text-xs text-gray-500 mb-1">Total Deductions</p>
+                        <p class="text-2xl font-bold text-red-600">₹${ps.total_deductions.toLocaleString('en-IN')}</p>
+                    </div>
+                </div>
+                <div class="bg-blue-50 rounded-xl p-4 text-center">
+                    <p class="text-sm text-gray-500 mb-1">Net Pay</p>
+                    <p class="text-3xl font-bold text-blue-700">₹${ps.net_salary.toLocaleString('en-IN')}</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="font-semibold text-green-700 text-sm mb-2 border-b border-green-100 pb-1">Earnings</h4>
+                        ${[['Basic', ps.basic],['HRA', ps.hra],['Special Allowance', ps.special_allowance],['Medical', ps.medical_allowance],['Conveyance', ps.conveyance_allowance],['Bonus', ps.bonus],['Overtime', ps.overtime_amount]].filter(([,v])=>v>0).map(([l,v])=>`<div class="flex justify-between text-sm py-1"><span class="text-gray-500">${l}</span><span class="font-medium">₹${Number(v).toLocaleString('en-IN')}</span></div>`).join('')}
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-red-600 text-sm mb-2 border-b border-red-100 pb-1">Deductions</h4>
+                        ${[['PF (Employee)', ps.pf_employee],['ESI (Employee)', ps.esi_employee],['Professional Tax', ps.professional_tax],['TDS', ps.tds],['Loan', ps.loan_deduction],['Other', ps.other_deductions]].filter(([,v])=>v>0).map(([l,v])=>`<div class="flex justify-between text-sm py-1"><span class="text-gray-500">${l}</span><span class="font-medium text-red-600">₹${Number(v).toLocaleString('en-IN')}</span></div>`).join('')}
+                    </div>
+                </div>
+
+                ${ps.has_pdf ? `<a href="/api/v1/payroll/payslips/${id}/pdf/" class="block w-full text-center py-3 bg-slate-700 text-white font-semibold rounded-xl hover:bg-slate-800 transition"><i class="fas fa-file-pdf mr-2"></i>Download PDF Payslip</a>` : '<p class="text-center text-xs text-gray-400">PDF not generated yet. Contact HR.</p>'}
+            </div>`;
+    } catch(e) {
+        document.getElementById('modalContent').innerHTML = '<p class="text-center text-red-400 py-8">Failed to load payslip details.</p>';
+    }
+}
+
+loadPayslips();
+</script>
 {% endblock %}

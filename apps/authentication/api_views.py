@@ -3,6 +3,7 @@ WorkSphere HR - Authentication API Views
 JWT-based authentication endpoints
 """
 from rest_framework.views import APIView
+from drf_spectacular.utils import extend_schema
 from rest_framework.response import Response
 from rest_framework import status, permissions
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -12,6 +13,7 @@ from django.utils import timezone
 from apps.authentication.models import LoginHistory, DeviceToken
 
 
+@extend_schema(request=None, responses=None)
 class LoginAPIView(APIView):
     permission_classes = [permissions.AllowAny]
 
@@ -86,6 +88,7 @@ class LoginAPIView(APIView):
         })
 
 
+@extend_schema(request=None, responses=None)
 class LogoutAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -112,6 +115,7 @@ class LogoutAPIView(APIView):
         return Response({'message': 'Logged out successfully'})
 
 
+@extend_schema(request=None, responses=None)
 class UserProfileAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 

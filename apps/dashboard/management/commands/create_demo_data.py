@@ -38,8 +38,8 @@ class Command(BaseCommand):
         from apps.authentication.models import User
         users = [
             {'email': 'admin@worksphere.hr',    'password': 'Admin@123', 'role': 'super_admin',   'is_staff': True, 'is_superuser': True},
-            {'email': 'hr@worksphere.hr',        'password': 'Admin@123', 'role': 'hr_admin'},
-            {'email': 'payroll@worksphere.hr',   'password': 'Pay@123',   'role': 'payroll_admin'},
+            {'email': 'hr@worksphere.hr',        'password': 'Admin@123', 'role': 'hr_admin',      'is_staff': True},
+            {'email': 'payroll@worksphere.hr',   'password': 'Pay@123',   'role': 'payroll_admin', 'is_staff': True},
             {'email': 'manager@worksphere.hr',   'password': 'Mgr@123',   'role': 'manager'},
             {'email': 'employee@worksphere.hr',  'password': 'Emp@123',   'role': 'employee'},
         ]

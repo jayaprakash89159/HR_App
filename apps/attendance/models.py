@@ -88,6 +88,21 @@ class Attendance(models.Model):
     # Shift reference
     shift = models.ForeignKey('shifts.Shift', null=True, blank=True, on_delete=models.SET_NULL)
 
+    # ── Approval workflow ──────────────────────────────────────
+    # A punch (photo + GPS) only counts in reports once approved.
+    # Until then it's 'pending' and visible only to the employee
+    # themselves as their own "today" status.
+    APPROVAL_CHOICES = [
+        ('pending', 'Pending Approval'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+    ]
+    approval_status = models.CharField(max_length=10, choices=APPROVAL_CHOICES, default='pending')
+    approved_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
+                                     on_delete=models.SET_NULL, related_name='approved_attendance')
+    approved_at = models.DateTimeField(null=True, blank=True)
+    approval_remarks = models.TextField(blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -112,11 +127,12 @@ class Attendance(models.Model):
             self.save(update_fields=['total_working_minutes', 'effective_working_minutes'])
 
     @property
-    def working_hours_display(self):
+    def working_hours_display(self) -> str:
         minutes = self.effective_working_minutes
         hours = minutes // 60
         mins = minutes % 60
         return f"{hours}h {mins}m"
+    
 
 
 class AttendanceRegularization(models.Model):
@@ -220,13 +236,13 @@ class ShortTimeOff(models.Model):
 class SwipeLog(models.Model):
     """Raw biometric/device swipe logs"""
     SWIPE_TYPE_CHOICES = [('in', 'In'), ('out', 'Out'), ('break_in', 'Break In'), ('break_out', 'Break Out')]
-    SOURCE_CHOICES = [('biometric', 'Biometric'), ('mobile', 'Mobile'), ('web', 'Web'), ('qr', 'QR')]
+    SWIPE_SOURCE_CHOICES = [('biometric', 'Biometric'), ('mobile', 'Mobile'), ('web', 'Web'), ('qr', 'QR')]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='swipe_logs')
     swipe_time = models.DateTimeField()
     swipe_type = models.CharField(max_length=10, choices=SWIPE_TYPE_CHOICES)
-    source = models.CharField(max_length=15, choices=SOURCE_CHOICES)
+    source = models.CharField(max_length=15, choices=SWIPE_SOURCE_CHOICES)
     device_id = models.CharField(max_length=100, blank=True)
     latitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
     longitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
